@@ -1,7 +1,7 @@
 include '../../types.pxi'
 
 from libcpp.vector cimport vector
-from quantlib.handle cimport shared_ptr, static_pointer_cast
+from quantlib.ext cimport shared_ptr, static_pointer_cast
 from quantlib.processes.black_scholes_process cimport GeneralizedBlackScholesProcess
 from quantlib.processes._black_scholes_process cimport GeneralizedBlackScholesProcess as _GeneralizedBlackScholesProcess
 from quantlib.pricingengines._pricing_engine cimport PricingEngine as _PricingEngine
@@ -9,19 +9,20 @@ from quantlib.pricingengines.engine cimport PricingEngine
 from ._replicating_variance_swap_engine cimport ReplicatingVarianceSwapEngine as _ReplicatingVarianceSwapEngine
 
 cdef class ReplicatingVarianceSwapEngine(PricingEngine):
-    """
-        Variance-swap pricing engine using replicating cost,
-        as described in Demeterfi, Derman, Kamal & Zou,
-        "A Guide to Volatility and Variance Swaps", 1999
+    """Variance-swap pricing engine using replicating cost
 
-        Attributes
-        ---------
-        process : :obj:`GeneralizedBlackScholesProcess`
-        call_strikes : list of :obj:`Real`
-        put_strikes : list of :obj:`Real`
-        dk : Real
-            5.0
+       as described in [1]_.
 
+       Parameters
+       ----------
+       process : :class:`~quantlib.processes.black_scholes_process.GeneralizedBlackScholesProcess`
+       call_strikes : list of :obj:`Real`
+       put_strikes : list of :obj:`Real`
+       dk : Real, default 5.0
+
+       References
+       ----------
+       .. [1] Demeterfi, Derman, Kamal & Zou, "A Guide to Volatility and Variance Swaps", 1999
 
     """
 

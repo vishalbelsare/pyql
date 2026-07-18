@@ -1,23 +1,16 @@
-include '../types.pxi'
-
+from quantlib.types cimport Real, Size
 from libcpp.vector cimport vector
 
-from quantlib.handle cimport shared_ptr
+from quantlib.ext cimport shared_ptr
 from quantlib.time._date cimport Date
 
-from quantlib.instruments._exercise cimport Exercise
-from quantlib.instruments._option cimport OneAssetOption
-from quantlib.instruments._payoffs cimport StrikedTypePayoff
+from quantlib._exercise cimport Exercise
+from ._oneassetoption cimport OneAssetOption
+from quantlib._payoffs cimport StrikedTypePayoff
 
+from .asian_options cimport AverageType
 
-# Placeholder for enumerated averaging types
-cdef extern from 'ql/instruments/averagetype.hpp' namespace 'QuantLib::Average':
-    enum Type:
-        Arithmetic 
-        Geometric
-    
-
-cdef extern from 'ql/instruments/asianoption.hpp' namespace 'QuantLib':
+cdef extern from 'ql/instruments/asianoption.hpp' namespace 'QuantLib' nogil:
     # Continuous-averaging Asian option
     #    TODO add running average
     #    ingroup: instruments
@@ -25,19 +18,19 @@ cdef extern from 'ql/instruments/asianoption.hpp' namespace 'QuantLib':
     cdef cppclass ContinuousAveragingAsianOption(OneAssetOption):
 
         ContinuousAveragingAsianOption(
-                Type averageType,
+                AverageType averageType,
                 shared_ptr[StrikedTypePayoff]& payoff,
                 shared_ptr[Exercise]& exercise) except +
 
-       
+
     cdef cppclass DiscreteAveragingAsianOption(OneAssetOption):
         # Discrete-averaging Asian option
-        #    ingroup: instruments 
+        #    ingroup: instruments
         #    This constructor takes the running sum or product of past fixings,
         #    depending on the average type.  The fixing dates passed here can be
         #    only the future ones.
-        
-        DiscreteAveragingAsianOption(Type averageType,
+
+        DiscreteAveragingAsianOption(AverageType averageType,
                                      Real runningAccumulator,
                                      Size pastFixings,
                                      vector[Date] fixingDates,
@@ -50,8 +43,8 @@ cdef extern from 'ql/instruments/asianoption.hpp' namespace 'QuantLib':
         #    calculations, the option will compare them to the evaluation date to determine which
         #    are historic; it will then take as many values from allPastFixings as needed and ignore
         #    the others.  If not enough fixings are provided, it will raise an error.
-        
-        DiscreteAveragingAsianOption(Type averageType,
+
+        DiscreteAveragingAsianOption(AverageType averageType,
                                      vector[Date] fixingDates,
                                      shared_ptr[StrikedTypePayoff]& payoff,
                                      shared_ptr[Exercise]& exercise,

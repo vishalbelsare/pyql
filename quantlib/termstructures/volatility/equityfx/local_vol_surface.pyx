@@ -1,0 +1,49 @@
+from libcpp cimport bool
+from quantlib.types cimport Real, Time
+from cython.operator cimport dereference as deref
+from . cimport _local_vol_surface as _lvs
+from quantlib.handle cimport HandleYieldTermStructure, HandleBlackVolTermStructure
+from quantlib.quote cimport Quote
+from quantlib.ext cimport static_pointer_cast
+from quantlib.time.date cimport Date
+
+cdef class LocalVolSurface(LocalVolTermStructure):
+    def __init__(self, HandleBlackVolTermStructure black_ts, HandleYieldTermStructure risk_free_ts, HandleYieldTermStructure dividend_ts, Quote underlying):
+        """ Local volatility surface derived from a Black vol surface
+
+        Parameters
+        ----------
+        black_ts : BlackVolTermStructure
+        risk_free_ts : YieldTermStructure
+        dividend_ts : YieldTermStructure
+            the dividend term structure.
+        underlying : Quote
+            the spot underlying.
+
+
+        Notes
+        -----
+        For details about this implementation refer to [Gat]_.
+
+
+        References
+        ----------
+        .. [Gat] "Stochastic Volatility and LocalVolatility" in *Case Studies and Financial Modelling Course Notes,* Jim Gatheral, Fall Term, 2003 https://web.math.ku.dk/~rolf/teaching/ctff03/Gatheral.1.pdf
+        """
+        self._thisptr.reset(
+            new _lvs.LocalVolSurface(
+                black_ts.handle(),
+                risk_free_ts.handle(),
+                dividend_ts.handle(),
+                underlying.handle()
+            )
+        )
+
+    def localVol(self, d, Real underlying_level, bool extrapolate=False):
+        cdef _lvs.LocalVolSurface* surf = <_lvs.LocalVolSurface*>self._thisptr.get()
+        if isinstance(d, float):
+            return surf.localVol(<Time>d, underlying_level, extrapolate)
+        elif isinstance(d, Date):
+            return surf.localVol((<Date>d)._thisptr, underlying_level, extrapolate)
+        else:
+            raise TypeError("d needs to be either a Date or a Real")

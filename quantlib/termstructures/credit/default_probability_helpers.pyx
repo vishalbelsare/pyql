@@ -11,12 +11,12 @@ include '../../types.pxi'
 from cython.operator cimport dereference as deref
 from libcpp cimport bool
 
-from quantlib.handle cimport shared_ptr, static_pointer_cast
+from quantlib.ext cimport shared_ptr, static_pointer_cast
 
 cimport quantlib.termstructures.credit._credit_helpers as _ci
 cimport quantlib.termstructures._yield_term_structure as _yts
 from quantlib.time._period cimport Frequency
-from quantlib.time._schedule cimport Rule
+from quantlib.time.dategeneration cimport DateGeneration
 from quantlib.time._calendar cimport BusinessDayConvention
 
 
@@ -24,13 +24,13 @@ from quantlib.time.date cimport Period, date_from_qldate, Date
 cimport quantlib.time._date as _date
 from quantlib.time.calendar cimport Calendar
 from quantlib.time.daycounter cimport DayCounter
-from quantlib.termstructures.yield_term_structure cimport YieldTermStructure
+from quantlib.handle cimport HandleYieldTermStructure
 cimport quantlib._quote as _qt
 from quantlib.termstructures.default_term_structure cimport DefaultProbabilityTermStructure
 from quantlib.instruments.credit_default_swap cimport CreditDefaultSwap
 cimport quantlib.instruments._credit_default_swap as _cds
-from quantlib.instruments._credit_default_swap cimport PricingModel
-cimport quantlib.instruments._instrument as _instrument
+from quantlib.instruments.credit_default_swap cimport PricingModel
+cimport quantlib._instrument as _instrument
 from quantlib.quote cimport Quote
 
 cdef class CdsHelper:
@@ -53,7 +53,7 @@ cdef class CdsHelper:
     """
 
     def set_term_structure(self, DefaultProbabilityTermStructure ts not None):
-         self._thisptr.get().setTermStructure(ts._thisptr.get())
+         self._thisptr.get().setTermStructure(ts.as_dts_ptr())
 
     @property
     def latest_date(self):
@@ -112,9 +112,9 @@ cdef class SpreadCdsHelper(CdsHelper):
 
     def __init__(self, running_spread, Period tenor, Integer settlement_days,
                  Calendar calendar not None, int frequency,
-                 int paymentConvention, Rule date_generation_rule,
+                 int paymentConvention, DateGeneration date_generation_rule,
                  DayCounter daycounter, Real recovery_rate,
-                 YieldTermStructure discount_curve=YieldTermStructure(),
+                 HandleYieldTermStructure discount_curve=HandleYieldTermStructure(),
                  bool settles_accrual=True,
                  bool pays_at_default_time=True,
                  Date start_date=Date(),
@@ -128,31 +128,31 @@ cdef class SpreadCdsHelper(CdsHelper):
             self._thisptr = shared_ptr[_ci.DefaultProbabilityHelper](
                 new _ci.SpreadCdsHelper(
                     <Rate>running_spread, deref(tenor._thisptr),
-                    settlement_days, deref(calendar._thisptr),
+                    settlement_days, calendar._thisptr,
                     <Frequency>frequency,
                     <BusinessDayConvention>paymentConvention, date_generation_rule,
                     deref(daycounter._thisptr),
-                    recovery_rate, discount_curve._thisptr, settles_accrual,
+                    recovery_rate, discount_curve.handle(), settles_accrual,
                     pays_at_default_time,
-                    deref(start_date._thisptr),
+                    start_date._thisptr,
                     deref(lastperiod._thisptr),
                     rebates_accrual,
-                    <_cds.PricingModel>model)
+                    model)
                 )
         elif isinstance(running_spread, Quote):
             self._thisptr = shared_ptr[_ci.DefaultProbabilityHelper](
                 new _ci.SpreadCdsHelper(
                     (<Quote>running_spread).handle(), deref(tenor._thisptr),
-                    settlement_days, deref(calendar._thisptr),
+                    settlement_days, calendar._thisptr,
                     <Frequency>frequency,
-                    <BusinessDayConvention>paymentConvention, <Rule>date_generation_rule,
+                    <BusinessDayConvention>paymentConvention, date_generation_rule,
                     deref(daycounter._thisptr),
-                    recovery_rate, discount_curve._thisptr, settles_accrual,
+                    recovery_rate, discount_curve.handle(), settles_accrual,
                     pays_at_default_time,
-                    deref(start_date._thisptr),
+                    start_date._thisptr,
                     deref(lastperiod._thisptr),
                     rebates_accrual,
-                    <_cds.PricingModel>model)
+                    model)
             )
         else:
             raise TypeError("running_spread needs to be a float or a Quote Handle")
@@ -162,9 +162,9 @@ cdef class UpfrontCdsHelper(CdsHelper):
 
     def __init__(self, upfront, Rate running_spread, Period tenor not None,
                  Integer settlement_days, Calendar calendar not None, int frequency,
-                 int paymentConvention, Rule date_generation_rule,
+                 int paymentConvention, DateGeneration rule,
                  DayCounter daycounter not None, Real recovery_rate,
-                 YieldTermStructure discount_curve=YieldTermStructure(),
+                 HandleYieldTermStructure discount_curve=HandleYieldTermStructure(),
                  Natural upfront_settlement_days=3,
                  bool settles_accrual=True,
                  bool pays_at_default_time=True,
@@ -178,27 +178,27 @@ cdef class UpfrontCdsHelper(CdsHelper):
             self._thisptr = shared_ptr[_ci.DefaultProbabilityHelper](
                 new _ci.UpfrontCdsHelper(
                     <Rate>upfront, running_spread, deref(tenor._thisptr.get()),
-                    settlement_days, deref(calendar._thisptr), <Frequency>frequency,
-                    <BusinessDayConvention>paymentConvention, <Rule>date_generation_rule,
+                    settlement_days, calendar._thisptr, <Frequency>frequency,
+                    <BusinessDayConvention>paymentConvention, rule,
                     deref(daycounter._thisptr),
-                    recovery_rate, discount_curve._thisptr, upfront_settlement_days, settles_accrual,
+                    recovery_rate, discount_curve.handle(), upfront_settlement_days, settles_accrual,
                     pays_at_default_time,
-                    deref(start_date._thisptr),
+                    start_date._thisptr,
                     deref(lastperiod._thisptr),
                     rebates_accrual,
-                    <_cds.PricingModel>model)
+                    model)
             )
         elif isinstance(upfront, Quote):
             self._thisptr = shared_ptr[_ci.DefaultProbabilityHelper](
                 new _ci.UpfrontCdsHelper(
                     (<Quote>upfront).handle(), running_spread, deref(tenor._thisptr),
-                    settlement_days, deref(calendar._thisptr), <Frequency>frequency,
-                    <BusinessDayConvention>paymentConvention, date_generation_rule,
+                    settlement_days, calendar._thisptr, <Frequency>frequency,
+                    <BusinessDayConvention>paymentConvention, rule,
                     deref(daycounter._thisptr),
-                    recovery_rate, discount_curve._thisptr, upfront_settlement_days, settles_accrual,
+                    recovery_rate, discount_curve.handle(), upfront_settlement_days, settles_accrual,
                     pays_at_default_time,
-                    deref(start_date._thisptr),
+                    start_date._thisptr,
                     deref(lastperiod._thisptr),
                     rebates_accrual,
-                    <_cds.PricingModel>model)
+                    model)
             )

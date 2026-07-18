@@ -1,18 +1,19 @@
 from quantlib.market.conventions.swap import params as swap_params
 from quantlib.indexes.api import IborIndex
-from quantlib.instruments.swap import VanillaSwap, Payer
+from quantlib.instruments.swap import Swap
+from quantlib.instruments.vanillaswap import VanillaSwap
 from quantlib.pricingengines.swap import DiscountingSwapEngine
 from quantlib.quotes import SimpleQuote
 from quantlib.settings import Settings
 from quantlib.termstructures.yields.api import (
     FixedRateBondHelper, DepositRateHelper, FuturesRateHelper, SwapRateHelper,
-    PiecewiseYieldCurve, YieldTermStructure, BootstrapTrait
+    PiecewiseYieldCurve, HandleYieldTermStructure, BootstrapTrait
 )
 from quantlib.math.interpolation import LogLinear
 from quantlib.time.api import (
     Date, Period, Years, Days, JointCalendar, UnitedStates, UnitedKingdom,
     pydate_from_qldate, qldate_from_pydate, DayCounter,
-    BusinessDayConvention, Rule, Following, calendar_from_name,
+    BusinessDayConvention, DateGeneration, Following, calendar_from_name,
     Schedule, Frequency
 
 )
@@ -53,8 +54,7 @@ def make_rate_helper(market, quote, reference_date=None):
             Period(tenor),
             market._floating_rate_index.fixing_calendar,
             Period(market._params.fixed_leg_period).frequency,
-            BusinessDayConvention.from_name(
-                market._params.fixed_leg_convention),
+            BusinessDayConvention[market._params.fixed_leg_convention],
             DayCounter.from_name(market._params.fixed_leg_daycount),
             libor_index, spread, fwdStart)
     elif rate_type == 'DEP':
@@ -121,7 +121,7 @@ def make_eurobond_helper(
         index.fixing_calendar,
         index.business_day_convention,
         index.business_day_convention,
-        Rule.Backward,  # Date generation rule
+        DateGeneration.Backward,  # Date generation rule
         index.end_of_month,
         )
 
@@ -157,8 +157,9 @@ class Market:
 
 
 class FixedIncomeMarket(Market):
-    """
-    A Fixed Income Market, defined by:
+    """A Fixed Income Market
+
+    defined by:
     - a list of benchmarks instruments (deposits, FRA, swaps,
       EuroDollar futures, bonds)
     - a set of market conventions, needed to interpreted the quoted
@@ -328,16 +329,13 @@ class IborMarket(FixedIncomeMarket):
             accuracy=tolerance
         )
         self._term_structure = ts
-        self._discount_term_structure = YieldTermStructure()
-        self._discount_term_structure.link_to(ts)
-
-        self._forecast_term_structure = YieldTermStructure()
-        self._forecast_term_structure.link_to(ts)
+        self._discount_term_structure = HandleYieldTermStructure(ts)
+        self._forecast_term_structure = HandleYieldTermStructure(ts)
 
         return ts
 
     def discount(self, date_maturity, extrapolate=True):
-        return self._discount_term_structure.discount(date_maturity)
+        return self._discount_term_structure.current_link.discount(date_maturity)
 
     def create_fixed_float_swap(self, settlement_date, length, fixed_rate,
                                 floating_spread, **kwargs):
@@ -354,12 +352,12 @@ class IborMarket(FixedIncomeMarket):
                                     self._forecast_term_structure,
                                     **kwargs)
 
-        swap_type = Payer
+        swap_type = Swap.Payer
         nominal = 100.0
         fixed_convention = \
-            BusinessDayConvention.from_name(_params.fixed_leg_convention)
+            BusinessDayConvention[_params.fixed_leg_convention]
         floating_convention = \
-            BusinessDayConvention.from_name(_params.floating_leg_convention)
+            BusinessDayConvention[_params.floating_leg_convention]
         fixed_frequency = \
             Period(_params.fixed_leg_period)
         floating_frequency = Period(_params.floating_leg_period)
@@ -373,13 +371,13 @@ class IborMarket(FixedIncomeMarket):
         fixed_schedule = Schedule.from_rule(settlement_date, maturity,
                                   fixed_frequency, calendar,
                                   fixed_convention, fixed_convention,
-                                  Rule.Forward, False)
+                                  DateGeneration.Forward, False)
 
         float_schedule = Schedule.from_rule(settlement_date, maturity,
                                   floating_frequency,
                                   calendar, floating_convention,
                                   floating_convention,
-                                  Rule.Forward, False)
+                                  DateGeneration.Forward, False)
 
         swap = VanillaSwap(swap_type, nominal, fixed_schedule, fixed_rate,
                            fixed_daycount, float_schedule, index,

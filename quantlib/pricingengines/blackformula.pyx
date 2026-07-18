@@ -1,20 +1,18 @@
 include '../types.pxi'
 
 from . cimport _blackformula as _bf
-cimport quantlib.instruments._option as _opt
+cimport quantlib._option as _opt
 
-from quantlib.instruments._option cimport Type as OptionType
+from quantlib.option cimport OptionType
 
 from math import sqrt, log
-
-from quantlib.instruments.option import Call, Put
 
 def blackFormula(OptionType option_type, Real strike, Real forward, Real stdDev,
                  Real discount=1.0, Real displacement=0.0):
     """ Black 1976 formula
 
     Parameters
-    ==========
+    ----------
 
     option_type: str or option.Call/Put
 
@@ -28,7 +26,9 @@ def blackFormula(OptionType option_type, Real strike, Real forward, Real stdDev,
 
     displacement: float
 
+
     .. warning::
+
         Instead of volatility it uses standard deviation,
         i.e. volatility*sqrt(timeToMaturity)
 
@@ -72,3 +72,39 @@ def blackFormulaImpliedStdDev(OptionType cp, Real strike,
                                    <Real> guess,
                                    <Real> accuracy,
                                    <Natural> maxIterations)
+
+
+def bachelier_black_formula(OptionType option_type, Real strike, Real forward, Real stdDev,
+                            Real discount=1.0):
+    """ Black style formula when forward is normal rather than log-normal.
+
+    This is essentially the model of Bachelier.
+
+
+    Parameters
+    ----------
+
+    option_type: str or option.Call/Put
+
+    strike: float
+
+    forward: float
+
+    std_dev: float
+
+    discount: float
+
+
+    .. warning::
+
+        Bachelier model needs absolute volatility, not
+        percentage volatility. Standard deviation is
+        absoluteVolatility*sqrt(timeToMaturity)
+
+    """
+
+    return _bf.bachelierBlackFormula(option_type,
+                                     strike,
+                                     forward,
+                                     stdDev,
+                                     discount)

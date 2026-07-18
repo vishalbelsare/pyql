@@ -1,37 +1,24 @@
 include '../types.pxi'
-from quantlib.handle cimport shared_ptr, optional
-from ._vanillaswap cimport VanillaSwap
-from ._option cimport Option
-from ._exercise cimport Exercise
+from quantlib.ext cimport shared_ptr, optional
+from ._fixedvsfloatingswap cimport FixedVsFloatingSwap
+from ._overnightindexedswap cimport OvernightIndexedSwap
+from .._option cimport Option
+from .._exercise cimport Exercise
+from .swap cimport Type as SwapType
 from quantlib.termstructures._yield_term_structure cimport YieldTermStructure
-from quantlib.termstructures.volatility._volatilitytype cimport VolatilityType
-from quantlib.handle cimport Handle, optional
-
-cdef extern from "ql/instruments/swaption.hpp" namespace "QuantLib::Settlement":
-    enum Method:
-        PhysicalOTC
-        PhysicalCleared
-        CollateralizedCashPrice
-        ParYieldCurve
-
-    enum Type:
-        Physical
-        Cash
+from quantlib.termstructures.volatility.volatilitytype cimport VolatilityType
+from quantlib.handle cimport Handle
+from .swaption cimport Type, Method
 
 cdef extern from 'ql/instruments/swaption.hpp' namespace 'QuantLib':
-    cdef cppclass Settlement:
-        enum Type:
-            pass
-        enum Method:
-            pass
 
     cdef cppclass Swaption(Option):
-        Swaption(const shared_ptr[VanillaSwap]& swap,
+        Swaption(const shared_ptr[FixedVsFloatingSwap]& swap,
                  const shared_ptr[Exercise]& exercise,
-                 Settlement.Type delivery, # = Settlement::Physical
-                 Settlement.Method settlementMethod) # Settlement::PhysicalOTC
-        Settlement.Type settlementType()
-        Settlement.Method settlementMethod()
+                 Type delivery, # = Settlement::Physical
+                 Method settlementMethod) # Settlement::PhysicalOTC
+        Type settlementType()
+        Method settlementMethod()
         Volatility impliedVolatility(Real price,
                                      const Handle[YieldTermStructure]& discountCurve,
                                      Volatility guess,
@@ -41,4 +28,5 @@ cdef extern from 'ql/instruments/swaption.hpp' namespace 'QuantLib':
                                      Volatility maxVol,# = 4.0,
                                      VolatilityType type,# = ShiftedLognormal,
                                      Real displacement)# = 0.0)
-        const shared_ptr[VanillaSwap]& underlyingSwap()
+        SwapType type() const
+        const shared_ptr[FixedVsFloatingSwap]& underlying()

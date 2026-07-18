@@ -1,16 +1,10 @@
 from quantlib.time._daycounter cimport DayCounter
+from quantlib.time._schedule cimport Schedule
 
-cdef extern from 'ql/time/daycounters/actualactual.hpp' namespace 'QuantLib::ActualActual':
-    cdef enum Convention:
-        ISMA
-        Bond
-        ISDA
-        Historical
-        Actual365
-        AFB
-        Euro
 
-cdef extern from 'ql/time/daycounters/actualactual.hpp' namespace 'QuantLib':
-
+cdef extern from 'ql/time/daycounters/actualactual.hpp' namespace 'QuantLib' nogil:
     cdef cppclass ActualActual(DayCounter):
-        ActualActual(Convention)
+        enum Convention:
+            pass
+        ActualActual(Convention c)
+        ActualActual(Convention c, const Schedule& schedule)

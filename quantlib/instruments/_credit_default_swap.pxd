@@ -1,24 +1,16 @@
 from quantlib.types cimport Natural, Rate, Real
 
 from libcpp cimport bool
-from quantlib.handle cimport optional, Handle, shared_ptr
+from quantlib.ext cimport optional, shared_ptr
+from quantlib.handle cimport Handle
 from quantlib.termstructures._yield_term_structure cimport YieldTermStructure
-from ._instrument cimport Instrument
+from .._instrument cimport Instrument
 from quantlib._cashflow cimport CashFlow, Leg
 from quantlib.time._calendar cimport BusinessDayConvention
 from quantlib.time._date cimport Date, Period
 from quantlib.time._daycounter cimport DayCounter
-from quantlib.time._schedule cimport Schedule, Rule
-
-cdef extern from 'ql/default.hpp' namespace 'QuantLib::Protection':
-    enum Side:
-        Buyer
-        Seller
-
-cdef extern from 'ql/instruments/creditdefaultswap.hpp' namespace 'QuantLib::CreditDefaultSwap':
-    enum PricingModel:
-        Midpoint
-        ISDA
+from quantlib.time._schedule cimport Schedule, DateGeneration
+from quantlib.default cimport Protection
 
 cdef extern from 'ql/instruments/claim.hpp' namespace 'QuantLib':
 
@@ -28,7 +20,9 @@ cdef extern from 'ql/instruments/claim.hpp' namespace 'QuantLib':
 cdef extern from 'ql/instruments/creditdefaultswap.hpp' namespace 'QuantLib':
 
     cdef cppclass CreditDefaultSwap(Instrument):
-        CreditDefaultSwap(Side side,
+        enum PricingModel:
+            pass
+        CreditDefaultSwap(Protection side,
                           Real notional,
                           Rate spread,
                           Schedule& schedule,
@@ -43,7 +37,7 @@ cdef extern from 'ql/instruments/creditdefaultswap.hpp' namespace 'QuantLib':
                           Date tradeDate, # = Date(),
                           Natural cashSettlementDays, # = 3
         )
-        CreditDefaultSwap(Side side,
+        CreditDefaultSwap(Protection side,
                           Real notional,
                           Rate upfront,
                           Rate spread,
@@ -60,7 +54,7 @@ cdef extern from 'ql/instruments/creditdefaultswap.hpp' namespace 'QuantLib':
                           Date tradeDate, # = Date(),
                           Natural cashSettlementDays, # = 3
                           ) except +
-        Side side()
+        Protection side()
         Real notional()
         Rate runningSpread()
         optional[Rate] upfront()
@@ -86,13 +80,13 @@ cdef extern from 'ql/instruments/creditdefaultswap.hpp' namespace 'QuantLib':
         Rate conventionalSpread(Real conventionalRecovery,
                                 Handle[YieldTermStructure]& discountCurve,
                                 const DayCounter dayCounter,
-                                bool useIsdaEngine # = false
+                                CreditDefaultSwap.PricingModel model # = Midpoint
         ) except +
         Rate impliedHazardRate(Real targetNPV,
                                const Handle[YieldTermStructure]& discountCurve,
                                const DayCounter dayCounter,
                                Real recoveryRate, # = 0.4,
                                Real accuracy, # = 1.0e-8
-                               PricingModel model # = Midpoint
+                               CreditDefaultSwap.PricingModel model # = Midpoint
         ) except +
-    Date cdsMaturity(const Date& tradeDate, const Period& tenor, Rule rule) except +ValueError
+    Date cdsMaturity(const Date& tradeDate, const Period& tenor, DateGeneration rule) except +ValueError

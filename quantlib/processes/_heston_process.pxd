@@ -7,28 +7,20 @@
  FOR A PARTICULAR PURPOSE.  See the license for more details.
 """
 
-include '../types.pxi'
-
-from quantlib.handle cimport Handle, shared_ptr
+from quantlib._handle cimport Handle
+from quantlib.ext cimport shared_ptr
 from quantlib.termstructures.yields._flat_forward cimport YieldTermStructure
+from quantlib.types cimport Real, Size
 cimport quantlib._quote as _qt
 from quantlib._stochastic_process cimport StochasticProcess
 
-cdef extern from 'ql/processes/hestonprocess.hpp' namespace 'QuantLib':
+cdef extern from 'ql/processes/hestonprocess.hpp' namespace 'QuantLib' nogil:
 
     cdef cppclass HestonProcess(StochasticProcess):
         HestonProcess() # fake empty constructor for Cython
         # fixme: implement the discrization version of the constructor
         enum Discretization:
-            PartialTruncation
-            FullTruncation
-            Reflection
-            NonCentralChiSquareVariance
-            QuadraticExponential
-            QuadraticExponentialMartingale
-            BroadieKayaExactSchemeLobatto
-            BroadieKayaExactSchemeLaguerre
-            BroadieKayaExactSchemeTrapezoidal
+            pass
         HestonProcess(
             Handle[YieldTermStructure]& riskFreeRate,
             Handle[YieldTermStructure]& dividendYield,
@@ -48,7 +40,7 @@ cdef extern from 'ql/processes/hestonprocess.hpp' namespace 'QuantLib':
         Handle[YieldTermStructure] riskeFreeRate()
 
 
-cdef extern from 'ql/processes/batesprocess.hpp' namespace 'QuantLib':
+cdef extern from 'ql/processes/batesprocess.hpp' namespace 'QuantLib' nogil:
 
     cdef cppclass BatesProcess(HestonProcess):
         BatesProcess(
@@ -62,4 +54,3 @@ cdef extern from 'ql/processes/batesprocess.hpp' namespace 'QuantLib':
         Real Lambda 'lambda'() except +
         Real nu() except +
         Real delta() except +
-

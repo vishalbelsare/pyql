@@ -1,12 +1,12 @@
 from setuptools import setup, find_packages, Extension
 
 from distutils import log
-from distutils.sysconfig import customize_compiler
 
 import glob
 import os
 import platform
 import sys
+from pathlib import Path
 
 from Cython.Distutils import build_ext
 from Cython.Build import cythonize
@@ -88,7 +88,7 @@ def get_extra_compile_args():
         if DEBUG:
             args.append('/Z7')
     else:
-        args = []
+        args = ["-flto=auto"]
 
     return args
 
@@ -112,17 +112,24 @@ def get_extra_link_args():
     return args
 
 CYTHON_DIRECTIVES = {"embedsignature": True,
-        "language_level": '3str'}
+                     "language_level": '3str',
+                     "auto_pickle": False}
 
 def render_templates():
-    for basename in ["piecewise_yield_curve", "discount_curve", "forward_curve", "zero_curve"]:
-        for ext in ("pxd", "pyx"):
-            fname = f"quantlib/termstructures/yields/{basename}.{ext}.in"
-            output = fname[:-3]
-            if not os.path.exists(output) or (os.stat(output).st_mtime < os.stat(fname).st_mtime):
-                template = Template.from_filename(fname, encoding="utf-8")
-                with open(output, "wt") as f:
-                    f.write(template.substitute())
+    paths = [
+        (Path("quantlib/termstructures/yields"), ["piecewise_yield_curve", "discount_curve", "forward_curve", "zero_curve"]),
+        (Path("quantlib"), ["handle"]),
+    ]
+    for p, names in paths:
+        for basename in names:
+            for ext in (".pxd", ".pyx"):
+                output = (p / basename).with_suffix(ext)
+                fname = output.with_suffix(f"{ext}.in")
+                if fname.exists():
+                    if not output.exists() or (output.stat().st_mtime < fname.stat().st_mtime):
+                        template = Template.from_filename(fname, encoding="utf-8")
+                        with output.open("wt") as f:
+                            f.write(template.substitute())
 
 def collect_extensions():
     """ Collect all the directories with Cython extensions and return the list
@@ -141,11 +148,6 @@ def collect_extensions():
         'extra_link_args':get_extra_link_args(),
         'libraries':[QL_LIBRARY]
     }
-
-    test_extension = Extension('quantlib.test.test_cython_bug',
-        ['quantlib/test/test_cython_bug.pyx'],
-        **kwargs
-    )
 
     multipath_extension = Extension(
         name='quantlib.sim.simulate',
@@ -168,7 +170,6 @@ def collect_extensions():
     manual_extensions = [
         multipath_extension,
         hestonhw_constraint_extension,
-        test_extension,
     ]
 
     # remove  all the manual extensions from the collected ones
@@ -192,14 +193,6 @@ class pyql_build_ext(build_ext):
     and optionally c runtime dlls to the quantlib package.
     """
     def build_extensions(self):
-        customize_compiler(self.compiler)
-        try:
-            self.compiler.compiler_so.remove("-Wstrict-prototypes")
-        except (AttributeError, ValueError):
-            pass
-        lto_flags=["-flto", "-flto-partition=none", "-fuse-linker-plugin",
-                   "-ffat-lto-objects"]
-        self.compiler.compiler_so = [f for f in self.compiler.compiler_so if f not in lto_flags]
         build_ext.build_extensions(self)
 
     def run(self):
@@ -246,12 +239,13 @@ class pyql_build_ext(build_ext):
                     fh.write("\n".join(map(os.path.basename, dlls)))
 
 if __name__ == '__main__':
+    render_templates()
     setup(
         name = 'quantlib',
         version = '0.1',
         author = 'Didrik Pinte,Patrick Henaff',
         license = 'BSD',
-        packages = find_packages(),
+        packages = ['quantlib'],
         include_package_data = True,
         ext_modules = collect_extensions(),
         setup_requires=['cython'],

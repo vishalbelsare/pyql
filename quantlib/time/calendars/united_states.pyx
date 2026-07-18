@@ -1,14 +1,5 @@
-cimport quantlib.time._calendar as _calendar
 cimport quantlib.time.calendars._united_states as _us
 from quantlib.time.calendar cimport Calendar
-
-cpdef enum Market:
-    Settlement     = _us.Settlement # generic settlement calendar
-    NYSE           = _us.NYSE # New York stock exchange calendar
-    GovernmentBond = _us.GovernmentBond # government-bond calendar
-    NERC           = _us.NERC # off-peak days for NERC
-    LiborImpact    = _us.LiborImpact
-    #FederalReserve = _us.FederalReserve
 
 cdef class UnitedStates(Calendar):
     '''United States calendars.
@@ -83,7 +74,37 @@ cdef class UnitedStates(Calendar):
      * Labor Day, first Monday in September
      * Thanksgiving Day, fourth Thursday in November
      * Christmas, December 25th (moved to Monday if Sunday)
+
+    Parameters
+    ----------
+    market: Market, default Market.Settlement
+
+    Attributes
+    ----------
+    Settlement
+        generic settlement calendar
+    NYSE
+        New York stock exchange calendar
+    GovernmentBond
+        government-bond calendar
+    NERC
+        off-peak days for NERC
+    LiborImpact
+        Libor impact
+    FederalReserve
+        Federal Reserve Bankwire System
+    SOFR
+        SOFR fixing calendar
+
     '''
 
+    Settlement = Market.Settlement
+    NYSE = Market.NYSE
+    GovernmentBond = Market.GovernmentBond
+    NERC = Market.NERC
+    LiborImpact = Market.LiborImpact
+    FederalReserve = Market.FederalReserve
+    SOFR = Market.SOFR
+
     def __cinit__(self, Market market=Market.Settlement):
-        self._thisptr = new _us.UnitedStates(<_us.Market>market)
+        self._thisptr = _us.UnitedStates(market)

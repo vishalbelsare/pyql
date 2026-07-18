@@ -1,14 +1,15 @@
+from quantlib.types cimport Real, Spread
 from cython.operator cimport dereference as deref
 from quantlib.instruments.swap cimport Swap
-from quantlib.handle cimport static_pointer_cast, shared_ptr
+from quantlib.ext cimport static_pointer_cast, shared_ptr
 from quantlib.indexes.swap_index cimport SwapIndex
 from quantlib.indexes.ibor_index cimport IborIndex
 from quantlib.time.date cimport Period, Date
 from quantlib.time._period cimport Days
-from quantlib.termstructures.yield_term_structure cimport YieldTermStructure
+from quantlib.handle cimport HandleYieldTermStructure
 cimport quantlib.indexes._swap_index as _si
 cimport quantlib.indexes._ibor_index as _ii
-cimport quantlib.instruments._instrument as _in
+cimport quantlib._instrument as _in
 cimport quantlib.instruments._swap as _swap
 
 cdef class MakeCms:
@@ -49,12 +50,12 @@ cdef class MakeCms:
         return self
 
     def with_effective_date(self, Date effective_date not None):
-        self._thisptr.withEffectiveDate(deref(effective_date._thisptr))
+        self._thisptr.withEffectiveDate(effective_date._thisptr)
         return self
 
-    def with_discounting_term_structure(self, YieldTermStructure discounting_term_structure not None):
+    def with_discounting_term_structure(self, HandleYieldTermStructure discounting_term_structure not None):
         self._thisptr.withDiscountingTermStructure(
-            discounting_term_structure._thisptr)
+            discounting_term_structure.handle())
         return self
 
     def with_cms_leg_tenor(self, Period t not None):

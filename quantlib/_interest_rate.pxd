@@ -6,15 +6,14 @@
  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  FOR A PARTICULAR PURPOSE.  See the license for more details.
 """
-
-include 'types.pxi'
-
+from quantlib.types cimport DiscountFactor, Rate, Real, Time
 from libcpp.string cimport string
+from quantlib.time._date cimport Date
 from quantlib.time._daycounter cimport DayCounter
 from quantlib.time._period cimport Frequency
-from quantlib._compounding cimport Compounding
+from quantlib.compounding cimport Compounding
 
-cdef extern from 'ql/interestrate.hpp' namespace 'QuantLib':
+cdef extern from 'ql/interestrate.hpp' namespace 'QuantLib' nogil:
 
     cppclass InterestRate:
         InterestRate()
@@ -29,6 +28,10 @@ cdef extern from 'ql/interestrate.hpp' namespace 'QuantLib':
         Frequency frequency()
 
         DiscountFactor discountFactor(Time t)
+        DiscountFactor discountFactor(const Date& d1,
+                                      const Date &d2,
+                                      const Date& refStart,
+                                      const Date& refEnd)
         InterestRate impliedRate(Real compound,
                                  const DayCounter& resultDC,
                                  Compounding comp,
@@ -39,6 +42,10 @@ cdef extern from 'ql/interestrate.hpp' namespace 'QuantLib':
                                     Frequency freq,
                                     Time t)
         Real compoundFactor(Time t)
+        Real compoundFactor(const Date& d1,
+                            const Date &d2,
+                            const Date& refStart,
+                            const Date& refEnd)
 
 cdef extern from "<sstream>" namespace "std":
     cdef cppclass stringstream:

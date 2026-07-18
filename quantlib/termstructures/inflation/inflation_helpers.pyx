@@ -1,8 +1,8 @@
 from cython.operator cimport dereference as deref
 
 from . cimport _inflation_helpers as _ih
-from quantlib.handle cimport shared_ptr, static_pointer_cast
-from quantlib.time._businessdayconvention cimport BusinessDayConvention
+from quantlib.ext cimport shared_ptr, static_pointer_cast
+from quantlib.time.businessdayconvention cimport BusinessDayConvention
 from quantlib.quote cimport Quote
 from quantlib.time.daycounter cimport DayCounter
 from quantlib.time.date cimport Period, Date, date_from_qldate
@@ -10,7 +10,9 @@ from quantlib.time.calendar cimport Calendar
 from quantlib.indexes.inflation_index cimport (
     ZeroInflationIndex, YoYInflationIndex)
 cimport quantlib.indexes._inflation_index as _ii
-from quantlib.termstructures.yield_term_structure cimport YieldTermStructure
+from quantlib.indexes._inflation_index cimport CPI
+from quantlib.indexes.inflation_index cimport InterpolationType
+from quantlib.handle cimport HandleYieldTermStructure
 from quantlib.termstructures.inflation_term_structure cimport (
     ZeroInflationTermStructure, YoYInflationTermStructure)
 cimport quantlib.termstructures._inflation_term_structure as _its
@@ -18,20 +20,20 @@ cimport quantlib.termstructures.inflation._inflation_helpers as _ih
 
 cdef class ZeroCouponInflationSwapHelper:
     def __init__(self, Quote quote, Period swap_obs_lag not None,
-                  Date maturity not None, Calendar calendar not None,
-                  BusinessDayConvention payment_convention,
-                  DayCounter day_counter not None,
-                  ZeroInflationIndex zii not None,
-                  YieldTermStructure nominal_term_structure not None):
+                 Date maturity not None, Calendar calendar not None,
+                 BusinessDayConvention payment_convention,
+                 DayCounter day_counter not None,
+                 ZeroInflationIndex zii not None,
+                 InterpolationType observation_interpolation):
         self._thisptr = shared_ptr[ZeroInflationTraits.helper](
             new _ih.ZeroCouponInflationSwapHelper(
                 quote.handle(),
                 deref(swap_obs_lag._thisptr),
-                deref(maturity._thisptr),
-                deref(calendar._thisptr), payment_convention,
+                maturity._thisptr,
+                calendar._thisptr, payment_convention,
                 deref(day_counter._thisptr),
                 static_pointer_cast[_ii.ZeroInflationIndex](zii._thisptr),
-                nominal_term_structure._thisptr)
+                <CPI.InterpolationType>observation_interpolation)
             )
 
     def set_term_structure(self, ZeroInflationTermStructure ts):
@@ -52,16 +54,18 @@ cdef class YearOnYearInflationSwapHelper:
                   BusinessDayConvention payment_convention,
                   DayCounter day_counter not None,
                   YoYInflationIndex yii not None,
-                  YieldTermStructure nominal_term_structure not None):
+                  InterpolationType interpolation,
+                  HandleYieldTermStructure nominal_term_structure not None):
         self._thisptr = shared_ptr[YoYInflationTraits.helper](
             new _ih.YearOnYearInflationSwapHelper(
                 quote.handle(),
                 deref(swap_obs_lag._thisptr),
-                deref(maturity._thisptr),
-                deref(calendar._thisptr), payment_convention,
+                maturity._thisptr,
+                calendar._thisptr, payment_convention,
                 deref(day_counter._thisptr),
                 static_pointer_cast[_ii.YoYInflationIndex](yii._thisptr),
-                nominal_term_structure._thisptr)
+                <CPI.InterpolationType>interpolation,
+                nominal_term_structure.handle())
             )
 
     def set_term_structure(self, YoYInflationTermStructure ts):

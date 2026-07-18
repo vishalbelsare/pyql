@@ -4,9 +4,9 @@ from cython.operator cimport dereference as deref
 
 from libcpp.vector cimport vector
 
-from quantlib.handle cimport shared_ptr
 from quantlib.math.matrix cimport Matrix
-cimport quantlib.math._interpolations as intpl
+from quantlib.math.interpolation cimport Interpolation, Bilinear, Bicubic
+
 from quantlib.time.date cimport Date, date_from_qldate
 from quantlib.time._date cimport Date as _Date
 from quantlib.time.calendar cimport Calendar
@@ -18,37 +18,31 @@ from . cimport _black_variance_surface as _bvs
 from . cimport _black_vol_term_structure as _bvts
 from ..._vol_term_structure cimport VolatilityTermStructure
 
-cpdef public enum Extrapolation:
-    ConstantExtrapolation = _bvs.ConstantExtrapolation
-    InterpolatorDefaultExtrapolation = _bvs.InterpolatorDefaultExtrapolation
-
 cdef inline _bvs.BlackVarianceSurface* get_bvs(BlackVarianceSurface bvs):
     """ Utility function to extract a properly casted BlackVarianceSurface out
     of the internal _thisptr attribute of the BlackVolTermStructure base class.
     """
 
-    cdef _bvs.BlackVarianceSurface* ref = <_bvs.BlackVarianceSurface*>bvs._thisptr.get()
-    return ref
+    return <_bvs.BlackVarianceSurface*>bvs.as_ptr()
 
 
 cdef class BlackVarianceSurface(BlackVarianceTermStructure):
-    """"
+    """
     Black volatility surface modelled as variance surface
+
     This class calculates time/strike dependent Black volatilities
     using as input a matrix of Black volatilities observed in the
     market.
 
     The calculation is performed interpolating on the variance surface.
     Bilinear interpolation is used as default; this can be changed by the
-    setInterpolation() method.
+    set_interpolation method.
 
-    todo check time extrapolation
-
-    Attributes
+    Parameters
     ----------
     reference_date : Date
     cal : Calendar
-    dates : list of `obj`:Date
+    dates : list of Date
     strikes : list of floats
     black_vol_matrix : Matrix
     dc : DayCounter
@@ -70,19 +64,20 @@ cdef class BlackVarianceSurface(BlackVarianceTermStructure):
 
         cdef vector[_Date] _dates
         for d in dates:
-            _dates.push_back(deref((<Date?>d)._thisptr))
+            _dates.push_back((<Date?>d)._thisptr)
 
-        self._thisptr = shared_ptr[VolatilityTermStructure](
-                                new _bvs.BlackVarianceSurface(
-                                             deref(reference_date._thisptr),
-                                             deref(cal._thisptr),
-                                             _dates,
-                                             strikes,
-                                             (black_vol_matrix)._thisptr,
-                                             deref(dc._thisptr),
-                                             lower_extrap,
-                                             upper_extrap,
-                                             ))
+        self._thisptr.reset(
+                new _bvs.BlackVarianceSurface(
+                    reference_date._thisptr,
+                    cal._thisptr,
+                    _dates,
+                    strikes,
+                    (black_vol_matrix)._thisptr,
+                    deref(dc._thisptr),
+                    lower_extrap,
+                    upper_extrap,
+                    )
+                )
 
 
     @property
@@ -94,10 +89,10 @@ cdef class BlackVarianceSurface(BlackVarianceTermStructure):
         return get_bvs(self).maxStrike()
 
     # Modifiers
-    def set_interpolation(self, Interpolator i):
-        if i == Bilinear:
-            get_bvs(self).setInterpolation[intpl.Bilinear]() # Calls the default constructor
-        elif i == Bicubic:
-            get_bvs(self).setInterpolation[intpl.Bicubic]()
+    def set_interpolation(self, Interpolation i):
+        if isinstance(i, Bicubic):
+            get_bvs(self).setInterpolation((<Bicubic>i)._thisptr) # Calls the default constructor
+        elif isinstance(i, Bilinear):
+            get_bvs(self).setInterpolation((<Bilinear>i)._thisptr)
         else:
             raise ValueError("Interpolator must be Bilinear or Bicubic")

@@ -1,15 +1,15 @@
-include '../../../types.pxi'
+from quantlib.types cimport Natural, Real, Volatility
 from libcpp cimport bool
 from quantlib.handle cimport Handle
 from quantlib._quote cimport Quote
 from quantlib.time._date cimport Date, Period
 from quantlib.time._daycounter cimport DayCounter
 from quantlib.time._calendar cimport Calendar
-from quantlib.time._businessdayconvention cimport BusinessDayConvention
+from quantlib.time.businessdayconvention cimport BusinessDayConvention
 from ._swaption_vol_structure cimport \
         SwaptionVolatilityStructure
-from quantlib.termstructures.volatility._volatilitytype cimport (
-        VolatilityType, ShiftedLognormal)
+from ..volatilitytype cimport VolatilityType
+
 
 cdef extern from 'ql/termstructures/volatility/swaption/swaptionconstantvol.hpp' namespace 'QuantLib' nogil:
     # this should really be constructors,

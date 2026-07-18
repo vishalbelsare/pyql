@@ -11,86 +11,67 @@ include '../types.pxi'
 
 from libcpp cimport bool
 
-from quantlib.handle cimport shared_ptr, Handle
+from quantlib.ext cimport shared_ptr
 from quantlib.time._date cimport Date
 from quantlib.time._calendar cimport Calendar
 from quantlib.time._daycounter cimport DayCounter
 from quantlib.time._period cimport Period, Frequency
-from quantlib.termstructures._yield_term_structure cimport YieldTermStructure
 from quantlib.termstructures.inflation._seasonality cimport Seasonality
+from .._termstructure cimport TermStructure
 
+cdef extern from 'ql/termstructures/inflationtermstructure.hpp' namespace 'QuantLib' nogil:
 
-cdef extern from 'ql/termstructures/inflationtermstructure.hpp' namespace 'QuantLib':
-
-    cdef cppclass InflationTermStructure:
-
-        InflationTermStructure() except +
-        Date& referenceDate()
-        Date& maxDate()
-        Date& baseDate()
-        Period observationLag()
-        bool indexIsInterpolated()
-        Rate baseRate()
-
+    cdef cppclass InflationTermStructure(TermStructure):
+        Date baseDate()
+        Real baseRate()
 
     cdef cppclass ZeroInflationTermStructure(InflationTermStructure):
-
-        ZeroInflationTermStructure() except +
-        ZeroInflationTermStructure(DayCounter& dayCounter,
-                                   Rate baseZeroRate,
-                                   Period& lag,
+        ZeroInflationTermStructure(Date baseDate,
                                    Frequency frequency,
-                                   bool indexIsInterpolated,
-                                   const Handle[YieldTermStructure]& yTS,
+                                   DayCounter& dayCounter,
                                    const shared_ptr[Seasonality]& seasonality # = shared_ptr<Seasonality>()
         ) except +
         ZeroInflationTermStructure(const Date& referenceDate,
-                                   const Calendar& calendar,
-                                   const DayCounter& dayCounter,
-                                   Rate baseZeroRate,
-                                   const Period& lag,
+                                   Date baseDate,
                                    Frequency frequency,
-                                   bool indexIsInterpolated,
-                                   const Handle[YieldTermStructure]& yTS,
+                                   const DayCounter& dayCounter,
                                    const shared_ptr[Seasonality] &seasonality # = shared_ptr<Seasonality>())
         ) except +
         ZeroInflationTermStructure(Natural settlementDays,
                                    const Calendar& calendar,
-                                   const DayCounter& dayCounter,
-                                   Rate baseZeroRate,
-                                   const Period& lag,
+                                   Date baseDate,
                                    Frequency frequency,
-                                   bool indexIsInterpolated,
-                                   const Handle[YieldTermStructure]& yTS,
+                                   const DayCounter& dayCounter,
                                    const shared_ptr[Seasonality] &seasonality # = boost::shared_ptr<Seasonality>()
         ) except +
 
-        Rate zeroRate(Date& d,
-                      Period& inst_obs_lag,
-                      bool force_linear_interpolation,
+        Rate zeroRate(Date d,
                       bool extrapolate)
-
         Rate zeroRate(Time t,
                       bool extrapolate)
 
 
     cdef cppclass YoYInflationTermStructure(InflationTermStructure):
-
-        YoYInflationTermStructure() except +
-
         YoYInflationTermStructure(DayCounter& dayCounter,
-                                  Rate baseZeroRate,
-                                  Period& lag,
+                                  Rate baseYoYRate,
                                   Frequency frequency,
-                                  bool indexIsInterpolated,
-                                  const Handle[YieldTermStructure]& yTS,
+                                  const DayCounter& dayCounter,
                                   const shared_ptr[Seasonality]& seasonality) except +
-
-        Rate yoyRate(Date& d,
-                      Period& inst_obs_lag,
-                      bool force_linear_interpolation,
-                      bool extrapolate) except +
-
+        YoYInflationTermStructure(Date& referenceDate,
+                                  Date baseDate,
+                                  Rate baseYoYRate,
+                                  Frequency frequency,
+                                  const DayCounter& dayCounter,
+                                  const shared_ptr[Seasonality]& seasonality) except +
+        YoYInflationTermStructure(Natural settlmentDays,
+                                  const Calendar& calendar,
+                                  Date baseDate,
+                                  Rate baseYoYRate,
+                                  Frequency frequency,
+                                  const DayCounter& dayCounter,
+                                  const shared_ptr[Seasonality]& seasonality) except +
+        Rate yoyRate(Date d,
+                     bool extrapolate) except +
         Rate yoyRate(Time t,
                       bool extrapolate) except +
 

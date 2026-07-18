@@ -1,12 +1,14 @@
-include '../types.pxi'
+from quantlib.types cimport Natural, Time
+from libcpp cimport bool
 from quantlib.time._daycounter cimport DayCounter
 from quantlib.time._calendar cimport Calendar
 from quantlib.time._date cimport Date
 from quantlib.time._period cimport Period
-from quantlib.time._businessdayconvention cimport BusinessDayConvention
+from quantlib.time.businessdayconvention cimport BusinessDayConvention
+from .._termstructure cimport TermStructure
 
 cdef extern from 'ql/termstructures/voltermstructure.hpp' namespace 'QuantLib' nogil:
-    cdef cppclass VolatilityTermStructure:
+    cdef cppclass VolatilityTermStructure(TermStructure):
         VolatilityTermStructure(BusinessDayConvention bdc,
                                 const DayCounter& dc) # = DayCounter()
         #initialize with a fixed reference date
@@ -33,3 +35,6 @@ cdef extern from 'ql/termstructures/voltermstructure.hpp' namespace 'QuantLib' n
         # the settlementDays used for reference date calculation
         Natural settlementDays() const
         Date optionDateFromTenor(const Period&) const
+        void enableExtrapolation(bool)
+        void disableExtrapolation(bool)
+        bool allowsExtrapolation() const

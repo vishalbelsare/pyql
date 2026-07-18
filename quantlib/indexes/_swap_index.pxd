@@ -12,19 +12,21 @@ from libcpp cimport bool
 from libcpp.string cimport string
 
 from quantlib.currency._currency cimport Currency
-from quantlib.handle cimport shared_ptr, Handle
+from quantlib.handle cimport Handle
+from quantlib.ext cimport shared_ptr
 from quantlib.indexes._interest_rate_index cimport InterestRateIndex
-from quantlib.indexes._ibor_index cimport IborIndex
+from quantlib.indexes._ibor_index cimport IborIndex, OvernightIndex
 from quantlib.instruments._vanillaswap cimport VanillaSwap
+from quantlib.instruments._overnightindexedswap cimport OvernightIndexedSwap
 from quantlib.termstructures._yield_term_structure cimport YieldTermStructure
 from quantlib.time._calendar cimport BusinessDayConvention
 from quantlib.time._date cimport Date
 from quantlib.time._period cimport Period
 from quantlib.time._calendar cimport Calendar
 from quantlib.time._daycounter cimport DayCounter
+from quantlib.cashflows.rateaveraging cimport RateAveraging
 
-
-cdef extern from 'ql/indexes/swapindex.hpp' namespace 'QuantLib':
+cdef extern from 'ql/indexes/swapindex.hpp' namespace 'QuantLib' nogil:
 
     cdef cppclass SwapIndex(InterestRateIndex):
         SwapIndex(string& familyName,
@@ -35,7 +37,7 @@ cdef extern from 'ql/indexes/swapindex.hpp' namespace 'QuantLib':
                   Period& fixedLegTenor,
                   BusinessDayConvention fixedLegConvention,
                   DayCounter& fixedLegDayCounter,
-                  shared_ptr[IborIndex]& iborIndex) nogil
+                  shared_ptr[IborIndex]& iborIndex)
         SwapIndex(const string& familyName,
                   const Period& tenor,
                   Natural settlementDays,
@@ -45,8 +47,19 @@ cdef extern from 'ql/indexes/swapindex.hpp' namespace 'QuantLib':
                   BusinessDayConvention fixedLegConvention,
                   const DayCounter& fixedLegDayCounter,
                   const shared_ptr[IborIndex]& iborIndex,
-                  const Handle[YieldTermStructure]& discountingTermStructure) nogil
-        shared_ptr[VanillaSwap] underlyingSwap(const Date& fixingDate) except +
+                  const Handle[YieldTermStructure]& discountingTermStructure)
+        shared_ptr[VanillaSwap] underlyingSwap(const Date& fixingDate)
         shared_ptr[IborIndex] iborIndex()
-        Handle[YieldTermStructure] forwardingTermStructure() except +
-        Handle[YieldTermStructure] discountingTermStructure() except +
+        Handle[YieldTermStructure] forwardingTermStructure()
+        Handle[YieldTermStructure] discountingTermStructure()
+
+    cdef cppclass OvernightIndexedSwapIndex(SwapIndex):
+        OvernightIndexedSwapIndex(string& familyName,
+                                  Period& tenor,
+                                  Natural settlementDays,
+                                  Currency currency,
+                                  shared_ptr[OvernightIndex]& overnightIndex,
+                                  bool telescopic_value_dates, # = False
+                                  RateAveraging averaging_method) # = RateAveraing.Compound
+        shared_ptr[OvernightIndex] overnight_index()
+        shared_ptr[OvernightIndexedSwap] underlying_swap(const Date& fixing_date)

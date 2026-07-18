@@ -1,7 +1,7 @@
 from cython.operator cimport dereference as deref
 from libcpp cimport bool
 from libcpp.vector cimport vector
-from quantlib.handle cimport shared_ptr, Handle, optional
+from quantlib.ext cimport optional
 
 from quantlib.pricingengines.engine cimport PricingEngine
 
@@ -10,8 +10,7 @@ from . cimport _isda_cds_engine as _ice
 
 cimport quantlib.termstructures._default_term_structure as _dts
 cimport quantlib.termstructures._yield_term_structure as _yts
-from quantlib.termstructures.default_term_structure cimport DefaultProbabilityTermStructure
-from quantlib.termstructures.yield_term_structure cimport YieldTermStructure
+from quantlib.handle cimport Handle, HandleDefaultProbabilityTermStructure, HandleYieldTermStructure
 from quantlib.termstructures.yields.rate_helpers cimport RateHelper
 from quantlib.termstructures.credit.default_probability_helpers cimport CdsHelper
 
@@ -29,9 +28,9 @@ cpdef enum ForwardsInCouponPeriod:
 
 cdef class IsdaCdsEngine(PricingEngine):
 
-    def __init__(self, DefaultProbabilityTermStructure ts not None,
+    def __init__(self, HandleDefaultProbabilityTermStructure ts not None,
                  double recovery_rate,
-                 YieldTermStructure discount_curve not None,
+                 HandleYieldTermStructure discount_curve not None,
                  include_settlement_date_flows=None,
                  NumericalFix numerical_fix=NumericalFix.Taylor,
                  AccrualBias accrual_bias=AccrualBias.HalfDayBias,
@@ -45,30 +44,28 @@ cdef class IsdaCdsEngine(PricingEngine):
         if include_settlement_date_flows is not None:
             settlement_flows = <bool>include_settlement_date_flows
 
-        cdef Handle[_dts.DefaultProbabilityTermStructure] handle = \
-            Handle[_dts.DefaultProbabilityTermStructure](ts._thisptr)
-
         self._thisptr.reset(
-            new _ice.IsdaCdsEngine(handle, recovery_rate,
-                                   discount_curve._thisptr,
+            new _ice.IsdaCdsEngine(ts.handle(), recovery_rate,
+                                   discount_curve.handle(),
                                    settlement_flows,
                                    <_ice.NumericalFix>numerical_fix,
                                    <_ice.AccrualBias>accrual_bias,
                                    <_ice.ForwardsInCouponPeriod>forwards_in_coupon_period)
         )
 
-    cdef _ice.IsdaCdsEngine* _get_cds_engine(self):
-        cdef _ice.IsdaCdsEngine* ref = <_ice.IsdaCdsEngine*>(self._thisptr.get())
-        return ref
+    cdef inline _ice.IsdaCdsEngine* _get_cds_engine(self) nogil:
+        return <_ice.IsdaCdsEngine*>(self._thisptr.get())
 
     @property
     def isda_rate_curve(self):
-        cdef YieldTermStructure yts = YieldTermStructure()
-        yts._thisptr.linkTo(self._get_cds_engine().isdaRateCurve().currentLink())
+        cdef HandleYieldTermStructure yts = HandleYieldTermStructure.__new__(HandleYieldTermStructure)
+        yts._handle = new Handle[_yts.YieldTermStructure](self._get_cds_engine().isdaRateCurve())
         return yts
 
     @property
     def isda_credit_curve(self):
-        cdef DefaultProbabilityTermStructure dts = DefaultProbabilityTermStructure()
-        dts._thisptr = self._get_cds_engine().isdaCreditCurve().currentLink()
+        cdef HandleDefaultProbabilityTermStructure dts = HandleDefaultProbabilityTermStructure.__new__(HandleDefaultProbabilityTermStructure)
+        dts._handle = new Handle[_dts.DefaultProbabilityTermStructure](
+            self._get_cds_engine().isdaCreditCurve()
+        )
         return dts

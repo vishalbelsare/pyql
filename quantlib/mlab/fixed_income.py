@@ -12,21 +12,22 @@ from quantlib.instruments.bonds import (
     FixedRateBond
 )
 
-from quantlib.compounding import Compounded
+from quantlib.compounding import Compounding
 
 from quantlib.pricingengines.bond import DiscountingBondEngine
-from quantlib.time.businessdayconvention import (
+from quantlib.time.api import (
     Unadjusted, ModifiedFollowing, Following)
 
 from quantlib.time.calendars.null_calendar import NullCalendar
 from quantlib.time.calendars.target import TARGET
 from quantlib.time.date import (
-    Date, Days, Period, Years, str_to_frequency)
+    Date, Days, Period, Years)
 
-from quantlib.time.schedule import Schedule, Backward
+from quantlib.time.schedule import Schedule
+from quantlib.time.dategeneration import DateGeneration
 from quantlib.settings import Settings
 from quantlib.termstructures.yields.api import (
-    FlatForward, YieldTermStructure
+    FlatForward, RelinkableHandleYieldTermStructure
 )
 
 from quantlib.time.daycounter import DayCounter
@@ -87,8 +88,6 @@ def _bndprice(bond_yield, coupon_rate, pricing_date, maturity_date,
     Clean price and accrued interest of a bond
     """
 
-    _period = str_to_frequency(period)
-
     evaluation_date = pydate_to_qldate(pricing_date)
 
     settings = Settings()
@@ -111,14 +110,14 @@ def _bndprice(bond_yield, coupon_rate, pricing_date, maturity_date,
     face_amount = 100.0
     redemption = 100.0
 
-    fixed_bond_schedule = Schedule(
+    fixed_bond_schedule = Schedule.from_rule(
         effective_date,
         termination_date,
-        Period(_period),
+        Period(period),
         calendar,
         ModifiedFollowing,
         ModifiedFollowing,
-        Backward
+        DateGeneration.Backward
     )
 
     issue_date = effective_date
@@ -136,7 +135,7 @@ def _bndprice(bond_yield, coupon_rate, pricing_date, maturity_date,
                 issue_date
     )
 
-    discounting_term_structure = YieldTermStructure(relinkable=True)
+    discounting_term_structure = RelinkableHandleYieldTermStructure()
 
     cnt_yield = DayCounter.from_name('Actual/Actual (Historical)')
 
@@ -145,8 +144,8 @@ def _bndprice(bond_yield, coupon_rate, pricing_date, maturity_date,
         forward=bond_yield,
         calendar=NullCalendar(),
         daycounter=cnt_yield,
-        compounding=Compounded,
-        frequency=_period)
+        compounding=Compounding.Compounded,
+        frequency=period)
 
     discounting_term_structure.link_to(flat_term_structure)
 
@@ -154,7 +153,7 @@ def _bndprice(bond_yield, coupon_rate, pricing_date, maturity_date,
 
     bond.set_pricing_engine(engine)
 
-    price = bond.clean_price
+    price = bond.clean_price()
     ac = bond.accrued_amount(pydate_to_qldate(settlement_date))
 
     return (price, ac)
@@ -200,8 +199,6 @@ def _cfamounts(coupon_rate, pricing_date, maturity_date,
     cash flow schedule
     """
 
-    _period = str_to_frequency(period)
-
     evaluation_date = pydate_to_qldate(pricing_date)
 
     settings = Settings()
@@ -221,14 +218,14 @@ def _cfamounts(coupon_rate, pricing_date, maturity_date,
     face_amount = 100.0
     redemption = 100.0
 
-    fixed_bond_schedule = Schedule(
+    fixed_bond_schedule = Schedule.from_rule(
         effective_date,
         termination_date,
-        Period(_period),
+        Period(period),
         calendar,
         ModifiedFollowing,
         ModifiedFollowing,
-        Backward
+        DateGeneration.Backward
     )
 
     issue_date = effective_date
@@ -245,6 +242,4 @@ def _cfamounts(coupon_rate, pricing_date, maturity_date,
                 redemption,
                 issue_date)
 
-    res = zip(*bond.cashflows)
-
-    return(res)
+    return zip(*[(cf.amount, cf.date) for cf in bond.cashflows])

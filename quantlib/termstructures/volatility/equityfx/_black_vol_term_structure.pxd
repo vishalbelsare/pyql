@@ -4,10 +4,10 @@ from libcpp cimport bool
 from quantlib.time._date cimport Date
 from quantlib.time._daycounter cimport DayCounter
 from quantlib.time._calendar cimport Calendar
-from quantlib.time._businessdayconvention cimport BusinessDayConvention
+from quantlib.time.businessdayconvention cimport BusinessDayConvention
 from quantlib.termstructures._vol_term_structure cimport VolatilityTermStructure
 
-cdef extern from 'ql/termstructures/volatility/equityfx/blackvoltermstructure.hpp' namespace 'QuantLib':
+cdef extern from 'ql/termstructures/volatility/equityfx/blackvoltermstructure.hpp' namespace 'QuantLib' nogil:
 
     cdef cppclass BlackVolTermStructure(VolatilityTermStructure):
         # Constructors

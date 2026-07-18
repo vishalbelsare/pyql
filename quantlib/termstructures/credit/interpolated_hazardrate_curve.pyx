@@ -1,6 +1,6 @@
 from libcpp.vector cimport vector
 from cython.operator cimport dereference as deref
-from quantlib.handle cimport shared_ptr
+from quantlib.ext cimport shared_ptr
 
 include '../../types.pxi'
 
@@ -17,16 +17,16 @@ cimport quantlib.time._calendar as _calendar
 cdef class InterpolatedHazardRateCurve(DefaultProbabilityTermStructure):
     """DefaultProbabilityTermStructure based on interpolation of hazard rates
 
-        Parameters
-        ----------
-        interpolator : int {Linear, LogLinear, BackwardFlat}
-            can be one of Linear, LogLinear, BackwardFlat
-        dates : :obj:`list` of :class:`~quantlib.time.date.Date`
-            list of dates
-        hazard_rates: :obj:`list` of float
-            corresponding list of hazard rates
-        day_counter: :class:`~quantlib.time.daycounter.DayCounter`
-        cal: :class:`~quantlib.time.calendar.Calendar`
+       Parameters
+       ----------
+       interpolator : int {Linear, LogLinear, BackwardFlat}
+           can be one of Linear, LogLinear, BackwardFlat
+       dates : :obj:`list` of :class:`~quantlib.time.date.Date`
+           list of dates
+       hazard_rates : :obj:`list` of float
+           corresponding list of hazard rates
+       day_counter : :class:`~quantlib.time.daycounter.DayCounter`
+       cal : :class:`~quantlib.time.calendar.Calendar`
 
     """
     def __init__(self, Interpolator interpolator, list dates, vector[Rate] hazard_rates,
@@ -34,7 +34,7 @@ cdef class InterpolatedHazardRateCurve(DefaultProbabilityTermStructure):
         # convert the list of PyQL dates into a vector of QL dates
         cdef vector[_date.Date] _dates
         for date in dates:
-            _dates.push_back(deref((<Date?>date)._thisptr.get()))
+            _dates.push_back((<Date?>date)._thisptr)
 
 
         self._trait = interpolator
@@ -44,21 +44,21 @@ cdef class InterpolatedHazardRateCurve(DefaultProbabilityTermStructure):
                 new _ihc.InterpolatedHazardRateCurve[intpl.Linear](
                     _dates, hazard_rates,
                     deref(day_counter._thisptr),
-                    deref(cal._thisptr))
+                    cal._thisptr)
             )
         elif interpolator == LogLinear:
             self._thisptr = shared_ptr[_dts.DefaultProbabilityTermStructure](
                 new _ihc.InterpolatedHazardRateCurve[intpl.LogLinear](
                     _dates, hazard_rates,
                     deref(day_counter._thisptr),
-                    deref(cal._thisptr))
+                    cal._thisptr)
             )
         elif interpolator == BackwardFlat:
             self._thisptr = shared_ptr[_dts.DefaultProbabilityTermStructure](
                 new _ihc.InterpolatedHazardRateCurve[intpl.BackwardFlat](
                     _dates, hazard_rates,
                     deref(day_counter._thisptr),
-                    deref(cal._thisptr))
+                    cal._thisptr)
             )
         else:
             raise ValueError("interpolator needs to be any of Linear, LogLinear or BackwardFlat")

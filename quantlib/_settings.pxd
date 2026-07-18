@@ -1,10 +1,9 @@
-from quantlib.handle cimport shared_ptr
+from quantlib.ext cimport optional, shared_ptr
 from quantlib._observable cimport Observable
 from quantlib.time._date cimport Date
 from libcpp cimport bool
-from .handle cimport optional
 
-cdef extern from "ql/settings.hpp" namespace "QuantLib":
+cdef extern from "ql/settings.hpp" namespace "QuantLib" nogil:
     cdef cppclass Settings:
         cppclass DateProxy:
             DateProxy()

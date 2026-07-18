@@ -19,21 +19,21 @@ from quantlib.time._daycounter cimport DayCounter
 from quantlib.currency._currency cimport Currency
 
 
-cdef extern from 'ql/indexes/interestrateindex.hpp' namespace 'QuantLib':
+cdef extern from 'ql/indexes/interestrateindex.hpp' namespace 'QuantLib' nogil:
 
     cdef cppclass InterestRateIndex(Index):
-        InterestRateIndex()
         InterestRateIndex(string& familyName,
                          Period& tenor,
                          Natural settlementDays,
                          Currency& currency,
                          Calendar& fixingCalendar,
                          DayCounter& dayCounter) nogil
-        string name()
         bool isValidFixingDate(Date& fixingDate)
         Rate fixing(Date& fixingDate,
                     bool forecastTodaysFixing) except +
-        update()
+
+        Rate forecastFixing(const Date& fixingDate)
+
         string familyName()
         Period tenor()
         Natural fixingDays()

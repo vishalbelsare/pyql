@@ -1,12 +1,10 @@
-"""
- Copyright (C) 2011, Enthought Inc
- Copyright (C) 2011, Patrick Henaff
+# Copyright (C) 2011, Enthought Inc
+# Copyright (C) 2011, Patrick Henaff
 
- This program is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- FOR A PARTICULAR PURPOSE.  See the license for more details.
-"""
-
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the license for more details.
+""" Heston model for the stochastic volatility of an asset"""
 from quantlib.types cimport Real
 from libcpp cimport bool
 from cython.operator cimport dereference as deref
@@ -20,7 +18,7 @@ cimport quantlib._stochastic_process as _sp
 cimport quantlib.termstructures.yields._flat_forward as _ffwd
 cimport quantlib.pricingengines._pricing_engine as _pe
 
-from quantlib.handle cimport shared_ptr, static_pointer_cast
+from quantlib.ext cimport shared_ptr, static_pointer_cast
 from quantlib.math.optimization cimport (Constraint,OptimizationMethod,
                                          EndCriteria)
 
@@ -29,9 +27,7 @@ from quantlib.pricingengines.engine cimport PricingEngine
 from quantlib.quote cimport Quote
 from quantlib.time.calendar cimport Calendar
 from quantlib.time.date cimport Period
-from quantlib.termstructures.yields.flat_forward cimport (
-    YieldTermStructure
-)
+from quantlib.handle cimport HandleYieldTermStructure
 from quantlib.models.calibration_helper cimport BlackCalibrationHelper, CalibrationErrorType
 
 
@@ -46,57 +42,69 @@ cdef class HestonModelHelper(BlackCalibrationHelper):
         Real s0,
         Real strike_price,
         Quote volatility,
-        YieldTermStructure risk_free_rate,
-        YieldTermStructure dividend_yield,
+        HandleYieldTermStructure risk_free_rate,
+        HandleYieldTermStructure dividend_yield,
         CalibrationErrorType error_type=_ch.RelativePriceError
     ):
         self._thisptr = shared_ptr[_ch.CalibrationHelper](
             new _hm.HestonModelHelper(
                 deref(maturity._thisptr),
-                deref(calendar._thisptr),
+                calendar._thisptr,
                 s0,
                 strike_price,
                 volatility.handle(),
-                risk_free_rate._thisptr,
-                dividend_yield._thisptr,
+                risk_free_rate.handle(),
+                dividend_yield.handle(),
                 error_type
             )
         )
 
 cdef class HestonModel:
+    """Heston model for the stochastic volatility of an asset
+
+    References
+    ----------
+    Heston, Steven L., 1993. "A Closed-Form Solution for Options with Stochastic Volatility with Applications to Bond and Currency Options."  *The review of Financial Studies, Volume 6, Issue 2, 327-343.*
+   """
 
     def __init__(self, HestonProcess process):
-
         self._thisptr = shared_ptr[_hm.HestonModel](
             new _hm.HestonModel(static_pointer_cast[_hp.HestonProcess](
                 process._thisptr))
         )
 
+    @property
     def process(self):
+        """:class:`~quantlib.processes.heston_process.HestonProcess: unnderlying process"""
         cdef HestonProcess process = HestonProcess.__new__(HestonProcess)
         process._thisptr = static_pointer_cast[_sp.StochasticProcess](
             self._thisptr.get().process())
         return process
 
-    property theta:
-        def __get__(self):
-            return self._thisptr.get().theta()
+    @property
+    def theta(self):
+        """variance mean reversion level"""
+        return self._thisptr.get().theta()
 
-    property kappa:
-        def __get__(self):
-            return self._thisptr.get().kappa()
+    @property
+    def kappa(self):
+        """variance mean reversion speed"""
+        return self._thisptr.get().kappa()
 
-    property sigma:
-        def __get__(self):
-            return self._thisptr.get().sigma()
+    @property
+    def sigma(self):
+        """volatility of the volatility"""
+        return self._thisptr.get().sigma()
 
-    property rho:
-        def __get__(self):
-            return self._thisptr.get().rho()
+    @property
+    def rho(self):
+        """correlation"""
+        return self._thisptr.get().rho()
 
-    property v0:
-        def __get__(self):
-            return self._thisptr.get().v0()
+    @property
+    def v0(self):
+        """spot variance"""
+        return self._thisptr.get().v0()
 
     def calibrate(self, list helpers, OptimizationMethod method, EndCriteria
                   end_criteria, Constraint constraint=Constraint(),

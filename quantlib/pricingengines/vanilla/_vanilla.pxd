@@ -3,7 +3,8 @@ include '../../types.pxi'
 from libcpp cimport bool
 from libcpp.vector cimport vector
 
-from quantlib.handle cimport shared_ptr
+from quantlib.ext cimport shared_ptr
+from quantlib.instruments._dividendschedule cimport DividendSchedule
 from quantlib.processes._black_scholes_process cimport GeneralizedBlackScholesProcess
 from quantlib.models.shortrate.onefactormodels._hullwhite cimport HullWhite
 from quantlib.processes._hullwhite_process cimport HullWhiteProcess
@@ -11,7 +12,8 @@ from quantlib.models.equity._heston_model cimport HestonModel
 from quantlib.models.equity._bates_model cimport (BatesModel, BatesDetJumpModel, BatesDoubleExpModel, BatesDoubleExpDetJumpModel)
 
 from quantlib.pricingengines._pricing_engine cimport PricingEngine
-cimport quantlib.methods.finitedifferences.solvers._fdmbackwardsolver as _fdm
+from ._analytic_heston_engine cimport AnalyticHestonEngine
+from quantlib.methods.finitedifferences.solvers._fdmbackwardsolver cimport FdmSchemeDesc
 
 cdef extern from 'ql/pricingengines/vanilla/analyticeuropeanengine.hpp' namespace 'QuantLib':
 
@@ -27,20 +29,10 @@ cdef extern from 'ql/pricingengines/vanilla/baroneadesiwhaleyengine.hpp' namespa
             shared_ptr[GeneralizedBlackScholesProcess]& process
         )
 
-cdef extern from 'ql/pricingengines/vanilla/analytichestonengine.hpp' namespace 'QuantLib':
-
-    cdef cppclass AnalyticHestonEngine(PricingEngine):
-        AnalyticHestonEngine()
-        AnalyticHestonEngine(
-            shared_ptr[HestonModel]& model,
-            Size integrationOrder
-        )
-
 
 cdef extern from 'ql/pricingengines/vanilla/analyticbsmhullwhiteengine.hpp' namespace 'QuantLib':
 
     cdef cppclass AnalyticBSMHullWhiteEngine(PricingEngine):
-        AnalyticBSMHullWhiteEngine()
         AnalyticBSMHullWhiteEngine(
             Real equity_short_rate_correlation,
             shared_ptr[GeneralizedBlackScholesProcess]& process,
@@ -49,7 +41,6 @@ cdef extern from 'ql/pricingengines/vanilla/analyticbsmhullwhiteengine.hpp' name
 cdef extern from 'ql/pricingengines/vanilla/analytichestonhullwhiteengine.hpp' namespace 'QuantLib':
 
     cdef cppclass AnalyticHestonHullWhiteEngine(PricingEngine):
-        AnalyticHestonHullWhiteEngine()
         AnalyticHestonHullWhiteEngine(
             shared_ptr[HestonModel]& heston_model,
             shared_ptr[HullWhite]& hw_model,
@@ -59,7 +50,6 @@ cdef extern from 'ql/pricingengines/vanilla/analytichestonhullwhiteengine.hpp' n
 cdef extern from 'ql/pricingengines/vanilla/fdhestonhullwhitevanillaengine.hpp' namespace 'QuantLib':
 
     cdef cppclass FdHestonHullWhiteVanillaEngine(PricingEngine):
-        FdHestonHullWhiteVanillaEngine()
         FdHestonHullWhiteVanillaEngine(
             shared_ptr[HestonModel]& heston_model,
             shared_ptr[HullWhiteProcess]& hw_process,
@@ -68,7 +58,20 @@ cdef extern from 'ql/pricingengines/vanilla/fdhestonhullwhitevanillaengine.hpp' 
             Size vGrid, Size rGrid,
             Size dampingSteps,
             bool controlVariate,
-            _fdm.FdmSchemeDesc& schemeDesc)
+            FdmSchemeDesc& schemeDesc
+        )
+
+        FdHestonHullWhiteVanillaEngine(
+            shared_ptr[HestonModel]& heston_model,
+            shared_ptr[HullWhiteProcess]& hw_process,
+            DividendSchedule dividends,
+            Real corrEquityShortRate,
+            Size tGrid, Size xGrid,
+            Size vGrid, Size rGrid,
+            Size dampingSteps,
+            bool controlVariate,
+            FdmSchemeDesc& schemeDesc
+        )
 
         void enableMultipleStrikesCaching(vector[double]&)
 
@@ -76,14 +79,12 @@ cdef extern from 'ql/pricingengines/vanilla/fdhestonhullwhitevanillaengine.hpp' 
 cdef extern from 'ql/pricingengines/vanilla/batesengine.hpp' namespace 'QuantLib':
 
     cdef cppclass BatesEngine(AnalyticHestonEngine):
-        BatesEngine()
         BatesEngine(
             shared_ptr[BatesModel]& model,
             Size integrationOrder
         )
 
     cdef cppclass BatesDetJumpEngine(BatesEngine):
-        BatesDetJumpEngine()
         BatesDetJumpEngine(
             shared_ptr[BatesDetJumpModel]& model,
             Size integrationOrder
@@ -95,7 +96,6 @@ cdef extern from 'ql/pricingengines/vanilla/batesengine.hpp' namespace 'QuantLib
         )
 
     cdef cppclass BatesDoubleExpEngine(AnalyticHestonEngine):
-        BatesDoubleExpEngine()
         BatesDoubleExpEngine(
             shared_ptr[BatesDoubleExpModel]& model,
             Size integrationOrder
@@ -107,7 +107,6 @@ cdef extern from 'ql/pricingengines/vanilla/batesengine.hpp' namespace 'QuantLib
         )
 
     cdef cppclass BatesDoubleExpDetJumpEngine(BatesDoubleExpEngine):
-        BatesDoubleExpDetJumpEngine()
         BatesDoubleExpDetJumpEngine(
             shared_ptr[BatesDoubleExpDetJumpModel]& model,
             Size integrationOrder
@@ -122,6 +121,7 @@ cdef extern from 'ql/pricingengines/vanilla/analyticdividendeuropeanengine.hpp' 
 
     cdef cppclass AnalyticDividendEuropeanEngine(PricingEngine):
         AnalyticDividendEuropeanEngine(
-            shared_ptr[GeneralizedBlackScholesProcess]& process
+            shared_ptr[GeneralizedBlackScholesProcess]& process,
+            DividendSchedule dividends
         )
         void calculate()

@@ -7,15 +7,28 @@
  FOR A PARTICULAR PURPOSE.  See the license for more details.
 """
 
-include '../types.pxi'
+from quantlib.types cimport Real, Size
+from cpython.ref cimport Py_INCREF
 from libcpp.utility cimport move
+cimport numpy as np
+
+np.import_array()
 
 cdef class Array:
-    """
-    1D array for linear algebra
+    """1D array for linear algebra.
+
+    This class implements the concept of a vector as used in linear algebra.
+
+    Parameters
+    ----------
+    size : int, optional
+        The size of the array.
+    value : float, optional
+        The value to fill the array with.
+
     """
 
-    def __init__(self, Size size, value=None):
+    def __init__(self, Size size=0, value=None):
         if value is None:
             self._thisptr = move[_arr.Array](_arr.Array(size))
         else:
@@ -31,15 +44,25 @@ cdef class Array:
             raise IndexError("index {} is larger than the size of the array {}".
                                format(key, self._thisptr.size()))
 
-    property size:
-        def __get__(self):
-            return self._thisptr.size()
+    def __len__(self):
+        return self._thisptr.size()
+
+    def to_ndarray(self):
+        """Returns a view of the array as a numpy array."""
+        cdef np.npy_intp[1] dims
+        dims[0] = self._thisptr.size()
+        cdef arr = np.PyArray_SimpleNewFromData(1, &dims[0], np.NPY_DOUBLE, <void*>(self._thisptr.begin()))
+        Py_INCREF(self)
+        np.PyArray_SetBaseObject(arr, self)
+        return arr
 
 cpdef qlarray_from_pyarray(p):
+    """Create a QuantLib Array from a Python array."""
     cdef Array x = Array(len(p))
     for i in range(len(p)):
         x._thisptr[i] = p[i]
     return x
 
 cpdef pyarray_from_qlarray(a):
+    """Create a Python array from a QuantLib Array."""
     return [a[i] for i in range(a.size)]

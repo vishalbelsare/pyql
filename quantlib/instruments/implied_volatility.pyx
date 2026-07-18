@@ -1,17 +1,16 @@
-"""
- Copyright (C) 2015, Enthought Inc
- Copyright (C) 2015, Patrick Henaff
+# Copyright (C) 2015, Enthought Inc
+# Copyright (C) 2015, Patrick Henaff
 
- This program is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- FOR A PARTICULAR PURPOSE.  See the license for more details.
-"""
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the license for more details.
 
-include '../types.pxi'
+"""Utilities for implied-volatility calculation"""
 
+from quantlib.types cimport Natural, Real, Volatility
 from cython.operator cimport dereference as deref
-from quantlib.handle cimport shared_ptr, static_pointer_cast
-from quantlib.instruments.instrument cimport Instrument
+from quantlib.ext cimport shared_ptr, static_pointer_cast
+from quantlib.instrument cimport Instrument
 from quantlib.pricingengines.engine cimport PricingEngine
 from quantlib.quotes.simplequote cimport SimpleQuote
 
@@ -38,7 +37,7 @@ cdef class ImpliedVolatilityHelper:
               Natural max_evaluations,
               Volatility min_vol,
               Volatility max_vol):
-    
+
         return _iv.IVH_calculate(
             deref(instrument._thisptr.get()),
             deref(engine._thisptr.get()),

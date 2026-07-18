@@ -1,26 +1,26 @@
 from cython.operator cimport dereference as deref
 from libcpp cimport bool
-from quantlib._defines cimport QL_NULL_REAL
+from quantlib.utilities.null cimport Null
 from quantlib.instruments.swap cimport Swap
-from quantlib.handle cimport static_pointer_cast, shared_ptr
+from quantlib.ext cimport static_pointer_cast, shared_ptr
 from quantlib.indexes.ibor_index cimport IborIndex
 from quantlib.time.date cimport Period, Date
-from quantlib.time._businessdayconvention cimport BusinessDayConvention
+from quantlib.time.businessdayconvention cimport BusinessDayConvention
 from quantlib.time.daycounter cimport DayCounter
 from quantlib.time._period cimport Days
-from quantlib.time._schedule cimport Rule
-from quantlib.termstructures.yield_term_structure cimport YieldTermStructure
+from quantlib.time.dategeneration cimport DateGeneration
+from quantlib.handle cimport HandleYieldTermStructure
 from quantlib.pricingengines.engine cimport PricingEngine
 cimport quantlib.indexes._ibor_index as _ii
-cimport quantlib.instruments._instrument as _in
-from quantlib.instruments.swap cimport VanillaSwap
+cimport quantlib._instrument as _in
+from quantlib.instruments.vanillaswap cimport VanillaSwap
 from quantlib.instruments._vanillaswap cimport VanillaSwap as _VanillaSwap
-from quantlib.instruments.swap cimport SwapType
+from .swap cimport Type
 
 cdef class MakeVanillaSwap:
     def __init__(self, Period swap_tenor not None,
                  IborIndex ibor_index not None,
-                 Rate fixed_rate=QL_NULL_REAL,
+                 Rate fixed_rate=Null[Real](),
                  Period forward_start not None=Period(0, Days)):
         self._thisptr = new _make_vanilla_swap.MakeVanillaSwap(
             deref(swap_tenor._thisptr),
@@ -43,8 +43,8 @@ cdef class MakeVanillaSwap:
         self._thisptr.receiveFixed(flag)
         return self
 
-    def with_type(self, SwapType type):
-        self._thiptr.withType(<_VanillaSwap.Type>(type))
+    def with_type(self, Type type):
+        self._thiptr.withType(type)
         return self
 
     def with_nominal(self, Real n):
@@ -56,14 +56,14 @@ cdef class MakeVanillaSwap:
         return self
 
     def with_effective_date(self, Date effective_date not None):
-        self._thisptr.withEffectiveDate(deref(effective_date._thisptr))
+        self._thisptr.withEffectiveDate(effective_date._thisptr)
         return self
 
     def with_termination_date(self, Date termination_date not None):
-        self._thisptr.withTerminationDate(deref(termination_date._thisptr))
+        self._thisptr.withTerminationDate(termination_date._thisptr)
         return self
 
-    def with_rule(self, Rule rule):
+    def with_rule(self, DateGeneration rule):
         self._thisptr.withRule(rule)
         return self
 
@@ -87,8 +87,8 @@ cdef class MakeVanillaSwap:
         self._thisptr.withFloatingLegSpread(sp)
         return self
 
-    def with_discounting_term_structure(self, YieldTermStructure yts not None):
-        self._thisptr.withDiscountingTermStructure(yts._thisptr)
+    def with_discounting_term_structure(self, HandleYieldTermStructure yts not None):
+        self._thisptr.withDiscountingTermStructure(yts.handle())
         return self
 
     def with_pricing_engine(self, PricingEngine engine not None):

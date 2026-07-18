@@ -1,20 +1,20 @@
-include '../types.pxi'
+from quantlib.types cimport Real, Spread
 from libcpp cimport bool
-from quantlib.handle cimport shared_ptr
+from quantlib.ext cimport shared_ptr
 from quantlib.indexes._swap_index cimport SwapIndex
 from quantlib.indexes._ibor_index cimport IborIndex
 from quantlib.instruments._swap cimport Swap
 from quantlib.cashflows._coupon_pricer cimport CmsCouponPricer
-from quantlib.time._businessdayconvention cimport BusinessDayConvention
+from quantlib.time.businessdayconvention cimport BusinessDayConvention
 from quantlib.time._calendar cimport Calendar
 from quantlib.time._daycounter cimport DayCounter
 from quantlib.time._date cimport Date
 from quantlib.time._period cimport Period
-from quantlib.time._schedule cimport Rule
+from quantlib.time.dategeneration cimport DateGeneration
 from quantlib.handle cimport Handle
 from quantlib.termstructures._yield_term_structure cimport YieldTermStructure
 
-cdef extern from 'ql/instruments/makecms.hpp' namespace 'QuantLib':
+cdef extern from 'ql/instruments/makecms.hpp' namespace 'QuantLib' nogil:
     cdef cppclass MakeCms:
         MakeCms(const Period& swapTenor,
                 const shared_ptr[SwapIndex]& swapIndex,
@@ -34,7 +34,7 @@ cdef extern from 'ql/instruments/makecms.hpp' namespace 'QuantLib':
         MakeCms& withCmsLegCalendar(const Calendar& cal)
         MakeCms& withCmsLegConvention(BusinessDayConvention bdc)
         MakeCms& withCmsLegTerminationDateConvention(BusinessDayConvention)
-        MakeCms& withCmsLegRule(Rule r)
+        MakeCms& withCmsLegRule(DateGeneration r)
         MakeCms& withCmsLegEndOfMonth(bool flag = True)
         MakeCms& withCmsLegFirstDate(const Date& d)
         MakeCms& withCmsLegNextToLastDate(const Date& d)
@@ -45,7 +45,7 @@ cdef extern from 'ql/instruments/makecms.hpp' namespace 'QuantLib':
         MakeCms& withFloatingLegConvention(BusinessDayConvention bdc)
         MakeCms& withFloatingLegTerminationDateConvention(
                                                     BusinessDayConvention bdc)
-        MakeCms& withFloatingLegRule(Rule r)
+        MakeCms& withFloatingLegRule(DateGeneration r)
         MakeCms& withFloatingLegEndOfMonth(bool flag = True)
         MakeCms& withFloatingLegFirstDate(const Date& d)
         MakeCms& withFloatingLegNextToLastDate(const Date& d)

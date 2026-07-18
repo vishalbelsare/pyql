@@ -1,5 +1,4 @@
 cimport quantlib.time.calendars._target as _tg
-from quantlib.time.calendar cimport Calendar
 
 cdef class TARGET(Calendar):
     '''TARGET calendar
@@ -18,4 +17,4 @@ cdef class TARGET(Calendar):
     '''
 
     def __cinit__(self):
-        self._thisptr = new _tg.TARGET()
+        self._thisptr = _tg.TARGET()

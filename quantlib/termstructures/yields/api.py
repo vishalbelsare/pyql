@@ -3,12 +3,16 @@ from .flat_forward import FlatForward
 from .piecewise_yield_curve import PiecewiseYieldCurve
 from .bootstraptraits import BootstrapTrait
 from .forward_spreaded_term_structure import ForwardSpreadedTermStructure
+from .zero_spreaded_term_structure import ZeroSpreadedTermStructure
 from .piecewise_zerospreaded_termstructure import PiecewiseZeroSpreadedTermStructure
 from .rate_helpers import (
     RateHelper, DepositRateHelper, FraRateHelper,
-    FuturesRateHelper, SwapRateHelper)
+    FuturesRateHelper, SwapRateHelper, FxSwapRateHelper)
+from .ois_rate_helper import OISRateHelper, DatedOISRateHelper
+from .overnightindexfutureratehelper import OvernightIndexFutureRateHelper, SofrFutureRateHelper
 from .discount_curve import InterpolatedDiscountCurve, DiscountCurve
 from ..yield_term_structure import YieldTermStructure
+from quantlib.handle import HandleYieldTermStructure, RelinkableHandleYieldTermStructure
 from .zero_curve import ZeroCurve
 from .discount_curve import DiscountCurve
 from .forward_curve import ForwardCurve

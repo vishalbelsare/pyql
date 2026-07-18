@@ -10,21 +10,23 @@
 import numpy as np
 import quantlib.reference.names as nm
 
-from quantlib.instruments.option import EuropeanExercise, VanillaOption, Put, Call
-from quantlib.instruments.payoffs import PlainVanillaPayoff
+from quantlib.option import OptionType
+from quantlib.instruments.vanillaoption import VanillaOption
+from quantlib.exercise import EuropeanExercise
+from quantlib.payoffs import PlainVanillaPayoff
 from quantlib.models.equity.heston_model import HestonModel
-from quantlib.pricingengines.vanilla.vanilla import AnalyticHestonEngine
 from quantlib.processes.heston_process import HestonProcess
 from quantlib.quotes import SimpleQuote
 from quantlib.settings import Settings
 from quantlib.util.converter import pydate_to_qldate, df_to_zero_curve
 
 from quantlib.instruments.api import EuropeanOption
-from quantlib.pricingengines.api import AnalyticEuropeanEngine
+from quantlib.pricingengines.api import (AnalyticEuropeanEngine,
+                                         AnalyticHestonEngine)
 from quantlib.processes.api import BlackScholesMertonProcess
-from quantlib.termstructures.yields.api import FlatForward
-from quantlib.termstructures.volatility.api import BlackConstantVol
-from quantlib.time.api import today, NullCalendar, ActualActual, ISMA
+from quantlib.termstructures.yields.api import FlatForward, HandleYieldTermStructure
+from quantlib.termstructures.volatility.api import BlackConstantVol, HandleBlackVolTermStructure
+from quantlib.time.api import today, NullCalendar, ActualActual
 
 from quantlib.time.date import (Period, Days)
 from quantlib.mlab.util import common_shape, array_call
@@ -38,13 +40,13 @@ def heston_pricer(trade_date, options, params, rates, spot):
 
     spot = SimpleQuote(spot)
 
-    risk_free_ts = df_to_zero_curve(rates[nm.INTEREST_RATE], trade_date)
-    dividend_ts = df_to_zero_curve(rates[nm.DIVIDEND_YIELD], trade_date)
+    risk_free_ts = HandleYieldTermStructure(df_to_zero_curve(rates[nm.INTEREST_RATE], trade_date))
+    dividend_ts = HandleYieldTermStructure(df_to_zero_curve(rates[nm.DIVIDEND_YIELD], trade_date))
 
     process = HestonProcess(risk_free_ts, dividend_ts, spot, **params)
 
     model = HestonModel(process)
-    engine = AnalyticHestonEngine(model, 64)
+    engine = AnalyticHestonEngine(model)
 
     settlement_date = pydate_to_qldate(trade_date)
 
@@ -52,13 +54,12 @@ def heston_pricer(trade_date, options, params, rates, spot):
     settings.evaluation_date = settlement_date
 
     modeled_values = np.zeros(len(options))
-
-    for index, row in options.T.iteritems():
+    for index, row in options.iterrows():
 
         expiry_date = row[nm.EXPIRY_DATE]
         strike = row[nm.STRIKE]
 
-        option_type = Call if row[nm.OPTION_TYPE] == nm.CALL_OPTION else Put
+        option_type = OptionType.Call if row[nm.OPTION_TYPE] == nm.CALL_OPTION else OptionType.Put
 
         payoff = PlainVanillaPayoff(option_type, strike)
 
@@ -79,7 +80,7 @@ def heston_pricer(trade_date, options, params, rates, spot):
 
 
 def blsprice(spot, strike, risk_free_rate, time, volatility,
-             option_type=Call, dividend=0.0, calc='price'):
+             option_type=OptionType.Call, dividend=0.0, calc='price'):
 
     """
     Matlab's blsprice + greeks (delta, gamma, theta, rho, vega, lambda)
@@ -104,11 +105,13 @@ def _blsprice(spot, strike, risk_free_rate, time, volatility,
     """
     _spot = SimpleQuote(spot)
 
-    daycounter = ActualActual(ISMA)
-    risk_free_ts = FlatForward(today(), risk_free_rate, daycounter)
-    dividend_ts = FlatForward(today(), dividend, daycounter)
-    volatility_ts = BlackConstantVol(today(), NullCalendar(),
-                                     volatility, daycounter)
+    daycounter = ActualActual(ActualActual.ISMA)
+    risk_free_ts = HandleYieldTermStructure(FlatForward(today(), risk_free_rate, daycounter))
+    dividend_ts = HandleYieldTermStructure(FlatForward(today(), dividend, daycounter))
+    volatility_ts = HandleBlackVolTermStructure(
+        BlackConstantVol(today(), NullCalendar(),
+                         volatility, daycounter)
+    )
 
     process = BlackScholesMertonProcess(_spot, dividend_ts,
                                         risk_free_ts, volatility_ts)
@@ -143,7 +146,7 @@ def _blsprice(spot, strike, risk_free_rate, time, volatility,
 
 
 def blsimpv(price, spot, strike, risk_free_rate, time,
-            option_type=Call, dividend=0.0):
+            option_type=OptionType.Call, dividend=0.0):
 
     args = locals()
     the_shape, shape = common_shape(args)
@@ -162,11 +165,12 @@ def _blsimpv(price, spot, strike, risk_free_rate, time,
              option_type, dividend):
 
     spot = SimpleQuote(spot)
-    daycounter = ActualActual(ISMA)
-    risk_free_ts = FlatForward(today(), risk_free_rate, daycounter)
-    dividend_ts = FlatForward(today(), dividend, daycounter)
-    volatility_ts = BlackConstantVol(today(), NullCalendar(),
-                                     .3, daycounter)
+    daycounter = ActualActual(ActualActual.ISMA)
+    risk_free_ts = HandleYieldTermStructure(FlatForward(today(), risk_free_rate, daycounter))
+    dividend_ts = HandleYieldTermStructure(FlatForward(today(), dividend, daycounter))
+    volatility_ts = HandleBlackVolTermStructure(
+        BlackConstantVol(today(), NullCalendar(), .3, daycounter)
+    )
 
     process = BlackScholesMertonProcess(spot, dividend_ts,
                                         risk_free_ts, volatility_ts)
@@ -186,9 +190,9 @@ def _blsimpv(price, spot, strike, risk_free_rate, time,
     max_vol = 2
 
     vol = option.implied_volatility(price, process,
-            accuracy,
-            max_evaluations,
-            min_vol,
-            max_vol)
+            accuracy=accuracy,
+            max_evaluations=max_evaluations,
+            min_vol=min_vol,
+            max_vol=max_vol)
 
     return vol

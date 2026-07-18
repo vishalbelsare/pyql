@@ -1,14 +1,15 @@
 from quantlib.types cimport Natural, Real
 
 from cython.operator cimport dereference as deref
-from quantlib.handle cimport static_pointer_cast, shared_ptr
+from quantlib.default cimport Protection
+from quantlib.ext cimport static_pointer_cast, shared_ptr
 from quantlib.time.date cimport Date, Period
 from quantlib.time.daycounter cimport DayCounter
 from quantlib.time._date cimport Date as QlDate, Period as QlPeriod
-from quantlib.time._schedule cimport Rule
+from quantlib.time.dategeneration cimport DateGeneration
 from quantlib.pricingengines.engine cimport PricingEngine
 from . cimport _credit_default_swap as _cds
-from . cimport _instrument as _in
+from .. cimport _instrument as _in
 from .credit_default_swap cimport CreditDefaultSwap
 from ._make_cds cimport cast
 
@@ -21,7 +22,7 @@ cdef class MakeCreditDefaultSwap:
                 coupon_rate)
         elif isinstance(tenor_or_term_date, Date):
             self._thisptr = new _make_cds.MakeCreditDefaultSwap(
-                deref((<Date>tenor_or_term_date)._thisptr),
+                (<Date>tenor_or_term_date)._thisptr,
                 coupon_rate)
         else:
             raise TypeError("tenor_or_term_date needs to be a Period or Date")
@@ -43,7 +44,7 @@ cdef class MakeCreditDefaultSwap:
         self._thisptr.withUpfrontRate(upf)
         return self
 
-    def with_side(self, _cds.Side side):
+    def with_side(self, Protection side):
         self._thisptr.withSide(side)
         return self
 
@@ -51,7 +52,7 @@ cdef class MakeCreditDefaultSwap:
         self._thisptr.withLastPeriodDayCounter(deref(dc._thisptr))
         return self
 
-    def with_date_generation_rule(self, Rule rule):
+    def with_date_generation_rule(self, DateGeneration rule):
         self._thisptr.withDateGenerationRule(rule)
         return self
 

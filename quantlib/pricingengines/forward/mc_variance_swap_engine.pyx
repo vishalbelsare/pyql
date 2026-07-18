@@ -1,11 +1,10 @@
-include '../../types.pxi'
-
+from quantlib.types cimport BigNatural, Integer, Real, Size
 from cython.operator cimport dereference as deref
 
 from libcpp cimport bool
 
-from quantlib._defines cimport QL_NULL_INTEGER, QL_NULL_REAL
-from quantlib.handle cimport shared_ptr, static_pointer_cast
+from quantlib.utilities.null cimport Null
+from quantlib.ext cimport shared_ptr, static_pointer_cast
 from quantlib.pricingengines.engine cimport PricingEngine
 from quantlib.pricingengines._pricing_engine cimport PricingEngine as _PricingEngine
 from quantlib.processes.black_scholes_process cimport GeneralizedBlackScholesProcess
@@ -15,19 +14,19 @@ from ._mc_variance_swap_engine cimport MCVarianceSwapEngine as _MCVarianceSwapEn
 
 
 cdef class MCVarianceSwapEngine(PricingEngine):
-    """
-    Variance-swap pricing engine using Monte Carlo simulation,
+    """Variance-swap pricing engine using Monte Carlo simulation
+
     as described in Demeterfi, Derman, Kamal & Zou,
     "A Guide to Volatility and Variance Swaps", 1999
-    ingroup forwardengines
     TODO define tolerance of numerical integral and incorporate it
-          in errorEstimate
+    in errorEstimate
+
     Test returned fair variances checked for consistency with
-          implied volatility curve.
+    implied volatility curve.
 
     Calculate variance via Monte Carlo
 
-    Attributes
+    Parameters
     ----------
     process : GeneralizedBlackScholesProcess
     time_steps : Size
@@ -42,13 +41,13 @@ cdef class MCVarianceSwapEngine(PricingEngine):
     """
     def __init__(self,
                  GeneralizedBlackScholesProcess process,
-                 Size time_steps = QL_NULL_INTEGER,
-                 Size time_steps_per_year = QL_NULL_INTEGER,
+                 Size time_steps = Null[Integer](),
+                 Size time_steps_per_year = Null[Integer](),
                  bool brownian_bridge = False,
                  bool antithetic_variate = False,
-                 Size required_samples = QL_NULL_INTEGER,
-                 Real required_tolerance = QL_NULL_REAL,
-                 Size max_samples = QL_NULL_INTEGER,
+                 Size required_samples = Null[Integer](),
+                 Real required_tolerance = Null[Real](),
+                 Size max_samples = Null[Integer](),
                  BigNatural seed = 0):
         # Cast the shared_ptr
         cdef shared_ptr[_GeneralizedBlackScholesProcess] process_ptr = \

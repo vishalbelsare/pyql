@@ -1,23 +1,21 @@
-
-include '../../types.pxi'
-
 from quantlib._quote cimport Quote
-from quantlib.handle cimport shared_ptr, Handle
-from quantlib.time._businessdayconvention cimport BusinessDayConvention
+from quantlib.ext cimport shared_ptr
+from quantlib.handle cimport Handle
+from quantlib.time.businessdayconvention cimport BusinessDayConvention
 from quantlib.time._date cimport Date
 from quantlib.time._daycounter cimport DayCounter
 from quantlib.time._calendar cimport Calendar
 from quantlib.time._period cimport Period
 
 from quantlib.indexes._inflation_index cimport (
-    YoYInflationIndex, ZeroInflationIndex)
+    YoYInflationIndex, ZeroInflationIndex, CPI)
 from quantlib.termstructures.inflation.inflation_traits cimport (
     ZeroInflationTraits, YoYInflationTraits)
 
 cimport quantlib.termstructures._inflation_term_structure as _its
 cimport quantlib.termstructures._yield_term_structure as _yts
 
-cdef extern from 'ql/termstructures/inflation/inflationhelpers.hpp' namespace 'QuantLib':
+cdef extern from 'ql/termstructures/inflation/inflationhelpers.hpp' namespace 'QuantLib' nogil:
     cdef cppclass ZeroCouponInflationSwapHelper(ZeroInflationTraits.helper):
         ZeroCouponInflationSwapHelper(
             const Handle[Quote]& quote,
@@ -27,7 +25,7 @@ cdef extern from 'ql/termstructures/inflation/inflationhelpers.hpp' namespace 'Q
             BusinessDayConvention payment_convention,
             const DayCounter& day_counter,
             const shared_ptr[ZeroInflationIndex]& zii,
-            const Handle[_yts.YieldTermStructure]& nominal_term_structure) except +
+            CPI.InterpolationType observationInterpolation) except +
 
     # Year-on-year inflation-swap bootstrap helper
     cdef cppclass YearOnYearInflationSwapHelper(YoYInflationTraits.helper):
@@ -39,4 +37,5 @@ cdef extern from 'ql/termstructures/inflation/inflationhelpers.hpp' namespace 'Q
             BusinessDayConvention payment_convention,
             const DayCounter& day_counter,
             const shared_ptr[YoYInflationIndex]& yii,
+            CPI.InterpolationType interpolation,
             const Handle[_yts.YieldTermStructure]& nominal_term_structure) except +

@@ -1,8 +1,8 @@
 include "../../types.pxi"
-from quantlib.instruments._option cimport Type as OptionType
+from quantlib.option cimport OptionType
 from quantlib.time._daycounter cimport DayCounter
 from quantlib.time._date cimport Date
-from ._volatilitytype cimport VolatilityType
+from .volatilitytype cimport VolatilityType
 
 cdef extern from 'ql/termstructures/volatility/smilesection.hpp' namespace 'QuantLib':
     cdef cppclass SmileSection:

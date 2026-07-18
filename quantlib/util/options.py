@@ -9,20 +9,20 @@
 
 import numpy as np
 import quantlib.reference.names as nm
-import quantlib.reference.data_structures as ds
 from pandas import DataFrame
 
-from quantlib.instruments.option import EuropeanExercise, VanillaOption
-from quantlib.instruments.payoffs import PlainVanillaPayoff, Put, Call
+from quantlib.instruments.vanillaoption import VanillaOption
+from quantlib.exercise import EuropeanExercise
+from quantlib.payoffs import PlainVanillaPayoff
+from quantlib.option import OptionType
 from quantlib.models.equity.heston_model import HestonModel
-from quantlib.pricingengines.vanilla.vanilla import AnalyticHestonEngine
 from quantlib.processes.heston_process import HestonProcess
 from quantlib.quotes import SimpleQuote
 from quantlib.settings import Settings
 from quantlib.util.converter import pydate_to_qldate, df_to_zero_curve
 
 from quantlib.instruments.api import EuropeanOption
-from quantlib.pricingengines.api import AnalyticEuropeanEngine
+from quantlib.pricingengines.api import AnalyticEuropeanEngine, AnalyticHestonEngine
 from quantlib.processes.api import BlackScholesMertonProcess
 from quantlib.termstructures.yields.api import FlatForward
 from quantlib.termstructures.volatility.api import BlackConstantVol
@@ -106,9 +106,11 @@ def options_to_rates(options, t_min=1. / 12., n_min=6):
         implied_dividend_yields.append(dividend_yield)
         expiry_dates.append(expiry_date)
 
-    rates = ds.riskfree_dividend_template().reindex(index=expiry_dates)
-    rates[nm.INTEREST_RATE] = implied_interest_rates
-    rates[nm.DIVIDEND_YIELD] = implied_dividend_yields
+    return DataFrame({
+        nm.INTEREST_RATE: implied_interest_rates,
+        nm.DIVIDEND_YIELD: implied_dividend_yields,
+        },
+                         index=expiry_dates
 
     return rates
 
@@ -141,7 +143,7 @@ def heston_pricer(trade_date, options, params, rates, spot):
         expiry_date = row[nm.EXPIRY_DATE]
         strike = row[nm.STRIKE]
 
-        option_type = Call if row[nm.OPTION_TYPE] == nm.CALL_OPTION else Put
+        option_type = OptionType.Call if row[nm.OPTION_TYPE] == nm.CALL_OPTION else OptionType.Put
 
         payoff = PlainVanillaPayoff(option_type, strike)
 

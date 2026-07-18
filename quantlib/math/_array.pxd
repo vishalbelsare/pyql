@@ -7,7 +7,7 @@
  FOR A PARTICULAR PURPOSE.  See the license for more details.
 """
 
-include '../types.pxi'
+from quantlib.types cimport Real, Size
 
 cdef extern from 'ql/math/array.hpp' namespace 'QuantLib':
     cdef cppclass Array:
@@ -17,3 +17,4 @@ cdef extern from 'ql/math/array.hpp' namespace 'QuantLib':
         Real& at(Size i) except +IndexError
         Size size()
         Real& operator[](Size)
+        const Real* begin()

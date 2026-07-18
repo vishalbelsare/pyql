@@ -5,7 +5,8 @@ from libcpp.vector cimport vector
 from libcpp cimport bool
 
 from . cimport _smilesection as _ss
-from quantlib.handle cimport shared_ptr, Handle
+from quantlib.ext cimport shared_ptr
+from quantlib.handle cimport Handle
 from quantlib.quote cimport Quote
 cimport quantlib._quote as _qt
 from quantlib.math.optimization cimport EndCriteria, OptimizationMethod
@@ -46,7 +47,7 @@ cdef class SabrInterpolatedSmileSection(SmileSection):
                 (<Quote>atm_volatility)._thisptr)
             self._thisptr = shared_ptr[_ss.SmileSection](
                 new _sis.SabrInterpolatedSmileSection(
-                    deref(option_date._thisptr),
+                    option_date._thisptr,
                     forward_handle,
                     strikes,
                     has_floating_strikes,
@@ -60,7 +61,7 @@ cdef class SabrInterpolatedSmileSection(SmileSection):
                 _vols.push_back(q_real)
             self._thisptr = shared_ptr[_ss.SmileSection](
                 _sis.SabrInterpolatedSmileSection_(
-                    deref(option_date._thisptr),
+                    option_date._thisptr,
                     <Rate>forward,
                     strikes,
                     has_floating_strikes,

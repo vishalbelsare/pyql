@@ -1,7 +1,7 @@
 include '../types.pxi'
 
 from cython.operator cimport dereference as deref
-from quantlib.handle cimport shared_ptr
+from quantlib.ext cimport shared_ptr
 from libcpp cimport bool
 
 cimport quantlib._stochastic_process as _sp
@@ -25,11 +25,11 @@ def simulate_process(StochasticProcess process not None, int nbPaths, TimeGrid g
 
     Parameters
     ----------
-    process : 'class':`~quantlib.StochasticProcess`
+    process : StochasticProcess
         Process to simulate.
     nbPath : int
         Number of paths.
-    grid : 'class':`~quantlib.TimeGrid`
+    grid : TimeGrid
         Time grid for the simulation.
     seed : int
         Seed for the random number generator.

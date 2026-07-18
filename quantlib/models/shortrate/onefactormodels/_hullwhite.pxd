@@ -1,43 +1,25 @@
-"""
- Copyright (C) 2015, Enthought Inc
- Copyright (C) 2015, Patrick Henaff
+# Copyright (C) 2015, Enthought Inc
+# Copyright (C) 2015, Patrick Henaff
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the license for more details.
 
- This program is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- FOR A PARTICULAR PURPOSE.  See the license for more details.
-"""
+from quantlib.types cimport Rate, Real, Time
+from quantlib.handle cimport Handle
+from quantlib.termstructures._yield_term_structure cimport YieldTermStructure
+from quantlib.option cimport OptionType
+from ._vasicek cimport Vasicek
+from ..._model cimport TermStructureConsistentModel
 
-include '../../../types.pxi'
+cdef extern from 'ql/models/shortrate/onefactormodels/hullwhite.hpp' namespace 'QuantLib' nogil:
 
-from libcpp.vector cimport vector
-from quantlib.math._optimization cimport OptimizationMethod, EndCriteria
-from quantlib.models.shortrate.calibrationhelpers._swaption_helper cimport SwaptionHelper
-from quantlib.handle cimport Handle, shared_ptr
-from quantlib.termstructures.yields._flat_forward cimport YieldTermStructure
-from quantlib.instruments._option cimport Type as OptionType
-from quantlib.models.shortrate.onefactormodels._vasicek cimport Vasicek
-
-cdef extern from 'ql/models/shortrate/onefactormodels/hullwhite.hpp' namespace 'QuantLib':
-
-    cdef cppclass HullWhite(Vasicek):
-
-        HullWhite() # fake empty constructor due to Cython issue
-
+    cdef cppclass HullWhite(Vasicek, TermStructureConsistentModel):
         HullWhite(
             Handle[YieldTermStructure]& termStructure,
             Real a, Real sigma) except +
 
-        Real discountBondOption(OptionType type,
-                                Real strike,
-                                Time maturity,
-                                Time bondMaturity) except +
-
-        Real discountBondOption(OptionType type,
-                                Real strike,
-                                Time maturity,
-                                Time bondStart,
-                                Time bondMaturity) except +
-
+        @staticmethod
         Rate convexityBias(Real futurePrice,
                            Time t,
                            Time T,

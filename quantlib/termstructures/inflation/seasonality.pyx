@@ -1,15 +1,12 @@
-"""
- Copyright (C) 2016, Enthought Inc
- Copyright (C) 2016, Patrick Henaff
+# Copyright (C) 2016, Enthought Inc
+# Copyright (C) 2016, Patrick Henaff
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the license for more details.
 
- This program is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- FOR A PARTICULAR PURPOSE.  See the license for more details.
-"""
-
-include '../../types.pxi'
-
-from quantlib.handle cimport shared_ptr, Handle
+from quantlib.types cimport Rate
+from quantlib.ext cimport shared_ptr
 from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
 
@@ -30,20 +27,16 @@ cimport quantlib._interest_rate as _ir
 
 cdef class Seasonality:
 
-    def __init__(self):
-        raise ValueError(
-            'This is an abstract class: use MultiplicativePriceSeasonality instead.'
-        )
-
     def correctZeroRate(self,
 		    Date d,
 		    Rate r,
 		    InflationTermStructure iTS):
 
         return self._thisptr.get().correctZeroRate(
-            deref(d._thisptr),
+            d._thisptr,
             r,
-            deref(iTS._thisptr))
+            deref(<_if.InflationTermStructure*>iTS._thisptr.get())
+        )
 
     def correctYoYRate(self,
 		    Date d,
@@ -51,15 +44,16 @@ cdef class Seasonality:
 		    InflationTermStructure iTS):
 
         return self._thisptr.get().correctYoYRate(
-            deref(d._thisptr),
+            d._thisptr,
             r,
-            deref(iTS._thisptr))
+            deref(<_if.InflationTermStructure*>iTS._thisptr.get()))
 
     def isConsistent(self,
 		    InflationTermStructure iTS):
 
         return self._thisptr.get().isConsistent(
-            deref(iTS._thisptr))
+        deref(<_if.InflationTermStructure*>iTS._thisptr.get())
+        )
 
 
 cdef class MultiplicativePriceSeasonality(Seasonality):
@@ -67,7 +61,7 @@ cdef class MultiplicativePriceSeasonality(Seasonality):
     def __init__(self, Date d not None, Frequency frequency, vector[Rate] seasonality_factors):
         self._thisptr = shared_ptr[_se.Seasonality](
             new _se.MultiplicativePriceSeasonality(
-                deref(d._thisptr),
+                d._thisptr,
                 frequency,
                 seasonality_factors))
 
@@ -76,7 +70,7 @@ cdef class MultiplicativePriceSeasonality(Seasonality):
             vector[Rate] seasonality_factors):
 
         (<_se.MultiplicativePriceSeasonality*>self._thisptr.get()).set(
-            deref(seasonality_base_date._thisptr),
+            seasonality_base_date._thisptr,
             frequency,
             seasonality_factors)
 
@@ -95,9 +89,10 @@ cdef class MultiplicativePriceSeasonality(Seasonality):
 
     def seasonality_factor(self, Date d):
         return (<_se.MultiplicativePriceSeasonality*> self._thisptr.get()).seasonalityFactor(
-            deref(d._thisptr))
+            d._thisptr)
 
     def isConsistent(self, InflationTermStructure iTS):
 
         return self._thisptr.get().isConsistent(
-            deref(iTS._thisptr))
+            deref(<_if.InflationTermStructure*>iTS._thisptr.get())
+        )

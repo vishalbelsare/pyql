@@ -35,17 +35,17 @@ cdef extern from 'ql/pricingengines/swaption/blackswaptionengine.hpp' namespace 
                             BlackSwaptionEngine.CashAnnuityModel model)# = DiscountCurve);
         BlackSwaptionEngine(const Handle[YieldTermStructure]& discountCurve,
                             const Handle[SwaptionVolatilityStructure]& vol,
-                            BlackSwaptionEngine.CashAnnuityModel model)# = DiscountCurve)
+                            BlackSwaptionEngine.CashAnnuityModel model) except +# = DiscountCurve)
 
     cdef cppclass BachelierSwaptionEngine(BlackStyleSwaptionEngine[BachelierSpec]):
         BachelierSwaptionEngine(const Handle[YieldTermStructure]& discountCurve,
                                 Volatility vol,
                                 const DayCounter& dc,# = Actual365Fixed(),
-                                BlackSwaptionEngine.CashAnnuityModel model)# = DiscountCurve);
+                                BachelierSwaptionEngine.CashAnnuityModel model)# = DiscountCurve);
         BachelierSwaptionEngine(const Handle[YieldTermStructure]& discountCurve,
                                 const Handle[Quote]& vol,
                                 const DayCounter& dc,# = Actual365Fixed(),
-                                BlackStyleSwaptionEngine[BachelierSpec].CashAnnuityModel model)# = DiscountCurve);
+                                BachelierSwaptionEngine.CashAnnuityModel model)# = DiscountCurve);
         BachelierSwaptionEngine(const Handle[YieldTermStructure]& discountCurve,
                                 const Handle[SwaptionVolatilityStructure]& vol,
-                                BlackStyleSwaptionEngine[BachelierSpec].CashAnnuityModel model)# = DiscountCurve)
+                                BachelierSwaptionEngine.CashAnnuityModel model) except +# = DiscountCurve)

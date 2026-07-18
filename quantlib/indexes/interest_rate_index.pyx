@@ -1,11 +1,9 @@
-"""
- Copyright (C) 2011, Enthought Inc
- Copyright (C) 2011, Patrick Henaff
-
- This program is distributed in the hope that it will be useful, but WITHOUT
- ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- FOR A PARTICULAR PURPOSE.  See the license for more details.
-"""
+# Copyright (C) 2011, Enthought Inc
+# Copyright (C) 2011, Patrick Henaff
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the license for more details.
 
 include '../types.pxi'
 from cython.operator cimport dereference as deref
@@ -13,7 +11,6 @@ from libcpp cimport bool
 from libcpp.string cimport string
 
 from quantlib.index cimport Index
-from quantlib.handle cimport shared_ptr
 from quantlib.time.date cimport Period
 from quantlib.time.daycounter cimport DayCounter
 from quantlib.currency.currency cimport Currency
@@ -29,16 +26,12 @@ cimport quantlib.time._daycounter as _dc
 cimport quantlib.time._calendar as _ca
 
 
-cdef _iri.InterestRateIndex* get_iri(InterestRateIndex index):
+cdef inline _iri.InterestRateIndex* get_iri(InterestRateIndex index):
     """ Utility function to extract a properly casted IRI pointer out of the
     internal _thisptr attribute of the Index base class. """
-
-    cdef _iri.InterestRateIndex* ref = <_iri.InterestRateIndex*>index._thisptr.get()
-    return ref
+    return <_iri.InterestRateIndex*>index._thisptr.get()
 
 cdef class InterestRateIndex(Index):
-    def __cinit__(self):
-        pass
 
     def __str__(self):
         return 'Interest rate index %s' % self.name
@@ -62,6 +55,7 @@ cdef class InterestRateIndex(Index):
             cdef DayCounter dc = DayCounter.__new__(DayCounter)
             dc._thisptr = new _dc.DayCounter(get_iri(self).dayCounter())
             return dc
+
     @property
     def currency(self):
         cdef Currency curr = Currency.__new__(Currency)
@@ -69,17 +63,21 @@ cdef class InterestRateIndex(Index):
         return curr
 
     def fixing_date(self, Date valueDate not None):
-        cdef _dt.Date dt = deref(valueDate._thisptr)
+        cdef _dt.Date dt = valueDate._thisptr
         cdef _dt.Date fixing_date = get_iri(self).fixingDate(dt)
         return date_from_qldate(fixing_date)
 
 
     def value_date(self, Date fixingDate not None):
-        cdef _dt.Date dt = deref(fixingDate._thisptr)
+        cdef _dt.Date dt = fixingDate._thisptr
         cdef _dt.Date value_date = get_iri(self).valueDate(dt)
         return date_from_qldate(value_date)
 
     def maturity_date(self, Date valueDate not None):
-        cdef _dt.Date dt = deref(valueDate._thisptr)
+        cdef _dt.Date dt = valueDate._thisptr
         cdef _dt.Date maturity_date = get_iri(self).maturityDate(dt)
         return date_from_qldate(maturity_date)
+
+    def forecast_fixing(self, Date fixing_date not None):
+        cdef _dt.Date dt = fixing_date._thisptr
+        return get_iri(self).forecastFixing(dt)

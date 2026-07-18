@@ -1,7 +1,8 @@
 from cython.operator cimport dereference as deref, preincrement as preinc
 from libcpp cimport bool
 from libcpp.vector cimport vector
-from quantlib.handle cimport optional
+from libcpp.utility cimport move
+from quantlib.ext cimport optional
 
 cimport quantlib.time._date as _date
 cimport quantlib.time._calendar as _calendar
@@ -9,40 +10,14 @@ cimport cython
 import numpy as np
 cimport numpy as np
 np.import_array()
-from ._businessdayconvention cimport Following, BusinessDayConvention
+from .businessdayconvention cimport Following, Unadjusted, BusinessDayConvention
+from .dategeneration cimport DateGeneration
 
 from .calendar cimport Calendar
+from .calendars.null_calendar cimport NullCalendar
 from .date cimport date_from_qldate, Date, Period
 
 import warnings
-
-cpdef enum Rule:
-    # Backward from termination date to effective date.
-    Backward       = _schedule.Backward
-    # Forward from effective date to termination date.
-    Forward        = _schedule.Forward
-    # No intermediate dates between effective date
-    # and termination date.
-    Zero           = _schedule.Zero
-    # All dates but effective date and termination
-    # date are taken to be on the third wednesday
-    # of their month (with forward calculation.)
-    ThirdWednesday = _schedule.ThirdWednesday
-    # All dates but the effective date are taken to be the
-    # twentieth of their month (used for CDS schedules in
-    # emerging markets.)  The termination date is also modified.
-    Twentieth      = _schedule.Twentieth
-    # All dates but the effective date are taken to be the
-    # twentieth of an IMM month (used for CDS schedules.)  The
-    # termination date is also modified.
-    TwentiethIMM   = _schedule.TwentiethIMM
-    # Same as TwentiethIMM with unrestricted date ends and
-    # log/short stub coupon period (old CDS convention).
-    OldCDS         = _schedule.OldCDS
-    # Credit derivatives standard rule since 'Big Bang' changes
-    # in 2009.
-    CDS            = _schedule.CDS
-    CDS2015        = _schedule.CDS2015
 
 cdef class Schedule:
     """ Payment schedule. """
@@ -51,54 +26,62 @@ cdef class Schedule:
             Period tenor not None, Calendar calendar not None,
             BusinessDayConvention business_day_convention=Following,
             BusinessDayConvention termination_date_convention=Following,
-            Rule date_generation_rule=Forward, bool end_of_month=False,
-            from_classmethod=False
+            DateGeneration date_generation_rule=DateGeneration.Forward, bool end_of_month=False,
            ):
 
-        if not from_classmethod:
-            warnings.warn("Deprecated: use class method from_rule instead",
-                DeprecationWarning)
+        warnings.warn("Deprecated: use class method from_rule instead",
+            DeprecationWarning)
 
-            self._thisptr = new _schedule.Schedule(
-                deref(effective_date._thisptr),
-                deref(termination_date._thisptr),
-                deref(tenor._thisptr),
-                deref(calendar._thisptr),
-                business_day_convention,
-                termination_date_convention,
-                date_generation_rule, end_of_month,
-                _date.Date(), _date.Date()
+        self._thisptr = move(
+                _schedule.Schedule(
+            effective_date._thisptr,
+            termination_date._thisptr,
+            deref(tenor._thisptr),
+            calendar._thisptr,
+            business_day_convention,
+            termination_date_convention,
+            date_generation_rule, end_of_month,
+            _date.Date(), _date.Date()
             )
-        else:
-            pass
+        )
 
     @classmethod
-    def from_dates(cls, dates, Calendar calendar not None,
-            BusinessDayConvention business_day_convention=Following,
-            BusinessDayConvention termination_date_convention=Following,
+    def from_dates(cls, dates, Calendar calendar=NullCalendar(),
+            BusinessDayConvention business_day_convention=Unadjusted,
+            termination_date_convention=None,
             Period tenor=None,
-            Rule date_generation_rule=Forward, bool end_of_month=False,
+            rule=None,
+            end_of_month=None,
             vector[bool] is_regular=[]):
         # convert lists to vectors
-        cdef vector[_date.Date] _dates = vector[_date.Date]()
+        cdef vector[_date.Date] _dates
+        cdef Date date
         for date in dates:
-            _dates.push_back(deref((<Date>date)._thisptr))
+            _dates.push_back(date._thisptr)
 
-        cdef Schedule instance = cls.__new__(cls)
+        cdef Schedule instance = Schedule.__new__(Schedule)
+        cdef optional[BusinessDayConvention] opt_termination_convention
         cdef optional[_calendar.Period] opt_tenor
+        cdef optional[DateGeneration] opt_rule
+        cdef optional[bool] opt_end_of_month
         if tenor is not None:
             opt_tenor = deref(tenor._thisptr)
-        instance._thisptr = new _schedule.Schedule(
+        if termination_date_convention is not None:
+            opt_termination_convention = <BusinessDayConvention>termination_date_convention
+        if rule is not None:
+            opt_rule = <DateGeneration>rule
+        if end_of_month is not None:
+            opt_end_of_month = <bool>end_of_month
+        instance._thisptr = move(_schedule.Schedule(
             _dates,
-            deref(calendar._thisptr),
+            calendar._thisptr,
             business_day_convention,
-            optional[BusinessDayConvention](
-                termination_date_convention),
+            opt_termination_convention,
             opt_tenor,
-            optional[_schedule.Rule](<_schedule.Rule>date_generation_rule),
-            optional[bool](end_of_month),
+            opt_rule,
+            opt_end_of_month,
             is_regular
-        )
+        ))
 
         return instance
 
@@ -108,27 +91,21 @@ cdef class Schedule:
                   Period tenor not None, Calendar calendar not None,
                   BusinessDayConvention business_day_convention=Following,
                   BusinessDayConvention termination_date_convention=Following,
-                  Rule date_generation_rule=Forward, bool end_of_month=False,
+                  DateGeneration rule=DateGeneration.Forward, bool end_of_month=False,
                   Date first_date=Date(), Date next_to_lastdate=Date()):
 
-        cdef Schedule instance = cls.__new__(cls)
-        instance._thisptr = new _schedule.Schedule(
-            deref(effective_date._thisptr),
-            deref(termination_date._thisptr),
+        cdef Schedule instance = Schedule.__new__(Schedule)
+        instance._thisptr = move(_schedule.Schedule(
+            effective_date._thisptr,
+            termination_date._thisptr,
             deref(tenor._thisptr),
-            deref(calendar._thisptr),
+            calendar._thisptr,
             business_day_convention,
             termination_date_convention,
-            date_generation_rule, end_of_month,
-            deref(first_date._thisptr), deref(next_to_lastdate._thisptr)
-            )
+            rule, end_of_month,
+            first_date._thisptr, next_to_lastdate._thisptr
+            ))
         return instance
-
-    def __dealloc__(self):
-        if self._thisptr is not NULL:
-            del self._thisptr
-            self._thisptr = NULL
-
 
     def dates(self):
         cdef vector[_date.Date] dates = self._thisptr.dates()
@@ -151,13 +128,13 @@ cdef class Schedule:
 
     def next_date(self, Date reference_date):
         cdef _date.Date dt = self._thisptr.nextDate(
-            deref(reference_date._thisptr)
+            reference_date._thisptr
         )
         return date_from_qldate(dt)
 
     def previous_date(self, Date reference_date):
         cdef _date.Date dt = self._thisptr.previousDate(
-            deref(reference_date._thisptr)
+            reference_date._thisptr
         )
         return date_from_qldate(dt)
 
@@ -190,3 +167,7 @@ cdef class Schedule:
             return date_from_qldate(self._thisptr.at(index))
         else:
             raise TypeError('index needs to be an integer or a slice')
+
+def previous_twentieth(Date d not None, DateGeneration rule):
+    cdef _date.Date date = _schedule.previousTwentieth(d._thisptr, rule)
+    return date_from_qldate(date)

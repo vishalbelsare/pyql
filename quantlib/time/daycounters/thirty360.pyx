@@ -1,13 +1,12 @@
-from cython.operator import dereference as deref
+from cython.operator cimport dereference as deref
 from quantlib.time.date cimport Date
-cimport quantlib.time._daycounter as _daycounter
 from . cimport _thirty360 as _th
-from .thirty360 cimport Convention as QlConvention
-from quantlib.time.daycounter cimport DayCounter
 
 cdef class Thirty360(DayCounter):
-   """The 30/360 day count can be calculated according to a
-    number of convention.
+   """30/360 day count convention
+
+   The 30/360 day count can be calculated according to a
+   number of convention.
 
    US convention: if the starting date is the 31st of a month or
    the last day of February, it becomes equal to the 30th of the
@@ -60,13 +59,15 @@ cdef class Thirty360(DayCounter):
    * ISDA
    * NASD
     """
+   USA = Convention.USA
+   BondBasis = Convention.BondBasis
+   European = Convention.European
+   EurobondBasis = Convention.EurobondBasis
+   Italian = Convention.Italian
+   German = Convention.German
+   ISMA = Convention.ISMA
+   ISDA = Convention.ISDA
+   NASD = Convention.NASD
 
-   def __cinit__(self, convention=BondBasis, Date termination_date=Date()):
-       self._thisptr = new _th.Thirty360(<QlConvention> convention,
-                                         deref(termination_date._thisptr))
-
-cdef _daycounter.DayCounter* from_name(str convention) except NULL:
-    try:
-        return new _th.Thirty360(<QlConvention>Convention[convention])
-    except KeyError:
-        raise ValueError("Unknown convention: {}".format(convention))
+   def __cinit__(self, Convention convention=Convention.BondBasis, Date termination_date=Date()):
+       self._thisptr = new _th.Thirty360(convention, termination_date._thisptr)

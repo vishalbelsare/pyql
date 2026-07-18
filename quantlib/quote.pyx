@@ -1,7 +1,9 @@
-from quantlib.handle cimport static_pointer_cast
+"""Abstract base class for market observables"""
+from quantlib.ext cimport static_pointer_cast
 from quantlib._observable cimport Observable as QlObservable
 
 cdef class Quote(Observable):
+    """Abstract base class for market observables"""
 
     def __init__(self):
         raise ValueError(
@@ -16,7 +18,10 @@ cdef class Quote(Observable):
         def __get__(self):
             return self._thisptr.get().value()
 
-    cdef shared_ptr[QlObservable] as_observable(self):
+    def __bool__(self):
+        return self._thisptr.get().isValid()
+
+    cdef shared_ptr[QlObservable] as_observable(self) noexcept nogil:
         return static_pointer_cast[QlObservable](self._thisptr)
 
     cdef inline Handle[_qt.Quote] handle(self):

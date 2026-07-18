@@ -5,23 +5,24 @@ on: [push, pull_request]
 
 jobs:
   build:
-    runs-on: ubuntu-20.04 # required for latest QuantLib
+    name: Build and test
+    runs-on: ubuntu-24.04 # required for latest QuantLib
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8']
+        python-version: ['3.9', '3.10', '3.11']
 
     steps:
       - name: install dependencies
-        run: | 
+        run: |
           sudo add-apt-repository ppa:edd/misc -y
           sudo apt-get update
           sudo apt-get install libquantlib0-dev
-          
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-      
+      - uses: actions/checkout@v5
+
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -29,13 +30,61 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install numpy
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -r requirements.txt
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{matrix.python-version}}
 
       - name: Build
         run: |
-           python setup.py build_ext --inplace
+          export PATH="/usr/lib/ccache:$PATH"
+          python setup.py build_ext --inplace -j 2
 
       - name: Run tests
         run: |
            python -m unittest discover -v
 
+      # Publish built docs to gh-pages branch.
+      - name: Checkout documentation branch
+        if: matrix.python-version == '3.11'
+        uses: actions/checkout@v5
+        with:
+          ref: gh-pages
+          path: gh-pages
+          persist-credentials: false
+
+      - name: Build docs
+        if: matrix.python-version == '3.11'
+        run: |
+          pip install sphinx nbsphinx scikit-learn ipython numpydoc
+          sudo apt-get install pandoc texlive texlive-latex-extra dvipng
+          make docs
+
+      - uses: actions/upload-artifact@v4
+        if: (matrix.python-version == '3.11') && (github.event_name == 'pull_request')
+        with:
+          name: "doc_${{ github.event.pull_request.number }}"
+          path: docs/build/html
+
+      - name: Move docs over
+        if: (matrix.python-version == '3.11') && (github.event_name == 'push')
+        run: |
+          ls
+          cp -r docs/build/html/* gh-pages/
+          cd gh-pages
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "New documentation" -a || true
+          # The above command will fail if no changes were present, so we ignore
+          # that.
+
+      - name: Push changes
+        if: (matrix.python-version == '3.11') && (github.event_name== 'push')
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}

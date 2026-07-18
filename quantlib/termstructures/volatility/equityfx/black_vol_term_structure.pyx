@@ -9,7 +9,7 @@ from quantlib.time.daycounter cimport DayCounter
 from quantlib.time._daycounter cimport DayCounter as _DayCounter
 from quantlib.time.calendar cimport Calendar
 from quantlib.time._calendar cimport Calendar as _Calendar
-from quantlib.time._businessdayconvention cimport BusinessDayConvention, Following
+from quantlib.time.businessdayconvention cimport BusinessDayConvention, Following
 from quantlib.termstructures.vol_term_structure import VolatilityTermStructure
 
 from . cimport _black_vol_term_structure as _bvts
@@ -24,6 +24,8 @@ cdef class BlackVolTermStructure(VolatilityTermStructure):
 
         Volatilities are assumed to be expressed on an annual basis.
     """
+    cdef inline _bvts.BlackVolTermStructure* get_bvts(self):
+        return <_bvts.BlackVolTermStructure*>self.as_ptr()
 
     def __init__(self):
         raise NotImplementedError
@@ -35,7 +37,7 @@ cdef class BlackVolTermStructure(VolatilityTermStructure):
             return self.get_bvts().blackVol(<float>maturity, strike, extrapolate)
         elif isinstance(maturity, Date):
             return self.get_bvts().blackVol(
-                deref((<Date?>maturity)._thisptr),
+                (<Date>maturity)._thisptr,
                 strike,
                 extrapolate
             )
@@ -53,7 +55,7 @@ cdef class BlackVolTermStructure(VolatilityTermStructure):
             )
         elif isinstance(maturity, Date):
             return self.get_bvts().blackVariance(
-                deref((<Date?>maturity)._thisptr),
+                (<Date>maturity)._thisptr,
                 strike,
                 extrapolate
             )
@@ -72,8 +74,8 @@ cdef class BlackVolTermStructure(VolatilityTermStructure):
             )
         elif isinstance(time_1, Date) and isinstance(time_2, Date):
             return self.get_bvts().blackForwardVol(
-                deref((<Date?>time_1)._thisptr),
-                deref((<Date?>time_2)._thisptr),
+                (<Date>time_1)._thisptr,
+                (<Date>time_2)._thisptr,
                 strike,
                 extrapolate
             )
@@ -92,8 +94,8 @@ cdef class BlackVolTermStructure(VolatilityTermStructure):
             )
         elif isinstance(time_1, Date) and isinstance(time_2, Date):
             return self.get_bvts().blackForwardVariance(
-                deref((<Date?>time_1)._thisptr),
-                deref((<Date?>time_2)._thisptr),
+                (<Date>time_1)._thisptr,
+                (<Date>time_2)._thisptr,
                 strike,
                 extrapolate
             )

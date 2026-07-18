@@ -1,7 +1,7 @@
 from cython.operator cimport dereference as deref
 from libcpp cimport bool
 
-from quantlib.handle cimport optional, shared_ptr
+from quantlib.ext cimport optional, shared_ptr, nullopt
 from quantlib.time._date cimport Date as QlDate
 from quantlib.time.date cimport Date, date_from_qldate
 from quantlib.observable cimport Observable
@@ -25,7 +25,7 @@ __quantlib_version__ = QL_VERSION
 __quantlib_hex_version__ = QL_HEX_VERSION
 
 cdef class DateProxy(Observable):
-    cdef shared_ptr[QlObservable] as_observable(self):
+    cdef shared_ptr[QlObservable] as_observable(self) noexcept nogil:
         return _settings.Settings.instance().evaluationDate1()
 
 cdef class Settings:
@@ -35,11 +35,10 @@ cdef class Settings:
     property evaluation_date:
         """Property to set/get the evaluation date. """
         def __get__(self):
-            cdef QlDate evaluation_date = <QlDate>_settings.Settings.instance().evaluationDate()
-            return date_from_qldate(evaluation_date)
+            return date_from_qldate(<QlDate>_settings.Settings.instance().evaluationDate())
 
         def __set__(self, Date evaluation_date not None):
-            _settings.Settings.instance().evaluationDate().assign_date(deref(evaluation_date._thisptr))
+            _settings.Settings.instance().evaluationDate().assign_date(evaluation_date._thisptr)
 
     @property
     def observable_evaluation_date(self):
@@ -80,13 +79,13 @@ cdef class Settings:
         if not flag:
             return None
         else:
-            return flag.get()
+            return flag.value()
 
     @include_todays_cashflows.setter
     def include_todays_cashflows(self, val):
-        cdef optional[bool] flag
+        cdef optional[bool] flag = nullopt
         if val is not None:
-            flag = <bool>val
+            flag = optional[bool](<bool>val)
         SET_VALUE(_settings.Settings.instance().includeTodaysCashFlows(),
                   flag)
 

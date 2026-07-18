@@ -4,11 +4,11 @@ from libcpp.vector cimport vector
 from quantlib.time._date cimport Date, Period
 from quantlib.time._calendar cimport Calendar
 from quantlib.time._daycounter cimport DayCounter
-from quantlib.time._businessdayconvention cimport BusinessDayConvention
+from quantlib.time.businessdayconvention cimport BusinessDayConvention
 from quantlib.termstructures.volatility.swaption._swaption_vol_structure \
     cimport SwaptionVolatilityStructure
 
-cdef extern from 'ql/termstructures/volatility/swaption/swaptionvoldiscrete.hpp' namespace 'QuantLib':
+cdef extern from 'ql/termstructures/volatility/swaption/swaptionvoldiscrete.hpp' namespace 'QuantLib' nogil:
     cdef cppclass SwaptionVolatilityDiscrete(SwaptionVolatilityStructure):
         # floating reference date, floating market data
         SwaptionVolatilityDiscrete(
